@@ -1,0 +1,16 @@
+package geographiclib
+
+// Constants defining the WGS84 ellipsoid
+
+//goland:noinspection ALL
+const (
+	// WGS84_a is the equitorial radius of the WGS84 ellipsoid (6378137 m)
+	WGS84_a = 6378137.
+
+	// WGS84_f is the flattening of the WGS84 ellipsoid (1/298.257223563)
+	WGS84_f = 1 / 298.257223563
+)
+
+var (
+	WGS84 = NewGeodesic(WGS84_a, WGS84_f)
+)

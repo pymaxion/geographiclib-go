@@ -229,3 +229,20 @@ func atan2d(y, x float64) float64 {
 func isfinite(x float64) bool {
 	return math.Abs(x) <= math.MaxFloat64
 }
+
+// min returns the minimum of two ints
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// sign returns 1 if x is non-negative, else -1
+func sign(x float64) float64 {
+	if x >= 0 {
+		return 1
+	} else {
+		return -1
+	}
+}
