@@ -1,6 +1,8 @@
 package geographiclib
 
-import "math"
+import (
+	"math"
+)
 
 const (
 	// digits represents the number of binary digits in the fraction of a double precision number.
@@ -238,11 +240,251 @@ func min(a, b int) int {
 	return b
 }
 
-// sign returns 1 if x is non-negative, else -1
-func sign(x float64) float64 {
-	if x >= 0 {
-		return 1
+// ternary is a simple, naive implementation of a ternary operator
+func ternary(predicate bool, valIfTrue, valIfFalse float64) float64 {
+	if predicate {
+		return valIfTrue
+	}
+	return valIfFalse
+}
+
+// sinCosSeries evaluates a trig series using Clenshaw summation
+func sinCosSeries(sinp bool, sinx, cosx float64, c []float64) float64 {
+	// Evaluate:
+	//  y = sinp ? sum(c[i] * sin( 2*i    * x), i, 1, n) :
+	//             sum(c[i] * cos((2*i+1) * x), i, 0, n-1)
+	// using Clenshaw summation. N.B. c[0] is unused for sin series Approx operation count = (n + 5)
+	// mult and (2 * n + 2) add
+	k := len(c) // Point to one beyond last element
+	n := k - int(ternary(sinp, 1, 0))
+	ar := 2 * (cosx - sinx) * (cosx + sinx) // 2 * cos(2 * x)
+	y1 := 0.                                // accumulators for sum
+	y0 := 0.
+	if n&1 != 0 {
+		k -= 1
+		y0 = c[k]
+	}
+	// Now n is even
+	n /= 2
+	for n != 0 { // while n--:
+		n -= 1
+		// Unroll loop x 2, so accumulators return to their original role
+		k -= 1
+		y1 = ar*y0 - y1 + c[k]
+		k -= 1
+		y0 = ar*y1 - y0 + c[k]
+	}
+
+	if sinp {
+		return 2 * sinx * cosx * y0 // sin(2 * x) * y0
 	} else {
-		return -1
+		return cosx * (y0 - y1) // cos(x) * (y0 - y1)
+	}
+}
+
+func initA3x(n float64) []float64 {
+	a3x := make([]float64, nA3x)
+	coeff := []float64{
+		// A3, coeff of eps^5, polynomial in n of order 0
+		-3, 128,
+		// A3, coeff of eps^4, polynomial in n of order 1
+		-2, -3, 64,
+		// A3, coeff of eps^3, polynomial in n of order 2
+		-1, -3, -1, 16,
+		// A3, coeff of eps^2, polynomial in n of order 2
+		3, -1, -2, 8,
+		// A3, coeff of eps^1, polynomial in n of order 1
+		1, -1, 2,
+		// A3, coeff of eps^0, polynomial in n of order 0
+		1, 1,
+	}
+	o, k := 0, 0
+	for j := nA3 - 1; j >= 0; j-- { // coeff of eps^j
+		m := min(nA3-j-1, j) // order of polynomial in n
+		a3x[k] = polyval(m, coeff, o, n) / coeff[o+m+1]
+		k++
+		o += m + 2
+	}
+	return a3x
+}
+
+func initC3x(n float64) []float64 {
+	c3x := make([]float64, nC3x)
+	coeff := []float64{
+		// C3[1], coeff of eps^5, polynomial in n of order 0
+		3, 128,
+		// C3[1], coeff of eps^4, polynomial in n of order 1
+		2, 5, 128,
+		// C3[1], coeff of eps^3, polynomial in n of order 2
+		-1, 3, 3, 64,
+		// C3[1], coeff of eps^2, polynomial in n of order 2
+		-1, 0, 1, 8,
+		// C3[1], coeff of eps^1, polynomial in n of order 1
+		-1, 1, 4,
+		// C3[2], coeff of eps^5, polynomial in n of order 0
+		5, 256,
+		// C3[2], coeff of eps^4, polynomial in n of order 1
+		1, 3, 128,
+		// C3[2], coeff of eps^3, polynomial in n of order 2
+		-3, -2, 3, 64,
+		// C3[2], coeff of eps^2, polynomial in n of order 2
+		1, -3, 2, 32,
+		// C3[3], coeff of eps^5, polynomial in n of order 0
+		7, 512,
+		// C3[3], coeff of eps^4, polynomial in n of order 1
+		-10, 9, 384,
+		// C3[3], coeff of eps^3, polynomial in n of order 2
+		5, -9, 5, 192,
+		// C3[4], coeff of eps^5, polynomial in n of order 0
+		7, 512,
+		// C3[4], coeff of eps^4, polynomial in n of order 1
+		-14, 7, 512,
+		// C3[5], coeff of eps^5, polynomial in n of order 0
+		21, 2560,
+	}
+	o, k := 0, 0
+	for l := 1; l < nC3; l++ { // l is index of C3[l]
+		for j := nC3 - 1; j >= l; j-- { // coeff of eps^j
+			m := min(nC3-j-1, j) // order of polynomial in n
+			c3x[k] = polyval(m, coeff, o, n) / coeff[o+m+1]
+			k++
+			o += m + 2
+		}
+	}
+	return c3x
+}
+
+func initC4x(n float64) []float64 {
+	c4x := make([]float64, nC4x)
+	coeff := []float64{
+		// C4[0], coeff of eps^5, polynomial in n of order 0
+		97, 15015,
+		// C4[0], coeff of eps^4, polynomial in n of order 1
+		1088, 156, 45045,
+		// C4[0], coeff of eps^3, polynomial in n of order 2
+		-224, -4784, 1573, 45045,
+		// C4[0], coeff of eps^2, polynomial in n of order 3
+		-10656, 14144, -4576, -858, 45045,
+		// C4[0], coeff of eps^1, polynomial in n of order 4
+		64, 624, -4576, 6864, -3003, 15015,
+		// C4[0], coeff of eps^0, polynomial in n of order 5
+		100, 208, 572, 3432, -12012, 30030, 45045,
+		// C4[1], coeff of eps^5, polynomial in n of order 0
+		1, 9009,
+		// C4[1], coeff of eps^4, polynomial in n of order 1
+		-2944, 468, 135135,
+		// C4[1], coeff of eps^3, polynomial in n of order 2
+		5792, 1040, -1287, 135135,
+		// C4[1], coeff of eps^2, polynomial in n of order 3
+		5952, -11648, 9152, -2574, 135135,
+		// C4[1], coeff of eps^1, polynomial in n of order 4
+		-64, -624, 4576, -6864, 3003, 135135,
+		// C4[2], coeff of eps^5, polynomial in n of order 0
+		8, 10725,
+		// C4[2], coeff of eps^4, polynomial in n of order 1
+		1856, -936, 225225,
+		// C4[2], coeff of eps^3, polynomial in n of order 2
+		-8448, 4992, -1144, 225225,
+		// C4[2], coeff of eps^2, polynomial in n of order 3
+		-1440, 4160, -4576, 1716, 225225,
+		// C4[3], coeff of eps^5, polynomial in n of order 0
+		-136, 63063,
+		// C4[3], coeff of eps^4, polynomial in n of order 1
+		1024, -208, 105105,
+		// C4[3], coeff of eps^3, polynomial in n of order 2
+		3584, -3328, 1144, 315315,
+		// C4[4], coeff of eps^5, polynomial in n of order 0
+		-128, 135135,
+		// C4[4], coeff of eps^4, polynomial in n of order 1
+		-2560, 832, 405405,
+		// C4[5], coeff of eps^5, polynomial in n of order 0
+		128, 99099,
+	}
+	o, k := 0, 0
+	for l := 0; l < nC4; l++ { // l is index of C4[l]
+		for j := nC4 - 1; j >= l; j-- { // coeff of eps^j
+			m := nC4 - j - 1 // order of polynomial in n
+			c4x[k] = polyval(m, coeff, o, n) / coeff[o+m+1]
+			k++
+			o += m + 2
+		}
+	}
+	return c4x
+}
+
+// a1m1f calculates the scale factor A1-1 = mean value of (d/dsigma)I1 - 1
+func a1m1f(eps float64) float64 {
+	coeff := []float64{
+		// (1-eps)*A1-1, polynomial in eps2 of order 3
+		1, 4, 64, 0, 256,
+	}
+	m := nA1 / 2
+	t := polyval(m, coeff, 0, sq(eps)) / coeff[m+1]
+	return (t + eps) / (1 - eps)
+}
+
+// c1f computes the coefficients C1[l] in the Fourier expansion of B1
+func c1f(eps float64, c []float64) {
+	coeff := []float64{
+		// C1[1]/eps^1, polynomial in eps2 of order 2
+		-1, 6, -16, 32,
+		// C1[2]/eps^2, polynomial in eps2 of order 2
+		-9, 64, -128, 2048,
+		// C1[3]/eps^3, polynomial in eps2 of order 1
+		9, -16, 768,
+		// C1[4]/eps^4, polynomial in eps2 of order 1
+		3, -5, 512,
+		// C1[5]/eps^5, polynomial in eps2 of order 0
+		-7, 1280,
+		// C1[6]/eps^6, polynomial in eps2 of order 0
+		-7, 2048,
+	}
+	eps2 := sq(eps)
+	d := eps
+	o := 0
+	for l := 1; l <= nC1; l++ { // l is index of C1p[l]
+		m := (nC1 - l) / 2 // order of polynomial in eps^2
+		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+		o += m + 2
+		d *= eps
+	}
+}
+
+// a2m1f calculates the scale factor A2-1 = mean value of (d/dsigma)I2 - 1
+func a2m1f(eps float64) float64 {
+	coeff := []float64{
+		// (eps+1)*A2-1, polynomial in eps2 of order 3
+		-11, -28, -192, 0, 256,
+	}
+	m := nA2 / 2
+	t := polyval(m, coeff, 0, sq(eps)) / coeff[m+1]
+	return (t - eps) / (1 + eps)
+}
+
+// The coefficients C2[l] in the Fourier expansion of B2
+func c2f(eps float64, c []float64) {
+	coeff := []float64{
+		// C2[1]/eps^1, polynomial in eps2 of order 2
+		1, 2, 16, 32,
+		// C2[2]/eps^2, polynomial in eps2 of order 2
+		35, 64, 384, 2048,
+		// C2[3]/eps^3, polynomial in eps2 of order 1
+		15, 80, 768,
+		// C2[4]/eps^4, polynomial in eps2 of order 1
+		7, 35, 512,
+		// C2[5]/eps^5, polynomial in eps2 of order 0
+		63, 1280,
+		// C2[6]/eps^6, polynomial in eps2 of order 0
+		77, 2048,
+	}
+
+	eps2 := sq(eps)
+	d := eps
+	o := 0
+	for l := 1; l <= nC2; l++ { // l is index of C2[l]
+		m := (nC2 - l) / 2 // order of polynomial in eps^2
+		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+		o += m + 2
+		d *= eps
 	}
 }
