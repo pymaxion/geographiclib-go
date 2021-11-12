@@ -31,16 +31,43 @@ type Data interface {
 	// A12 is the arc length on the auxiliary sphere between point 1 and point 2 in degrees
 	A12() float64
 
-	// M12Reduced is the reduced length of the geodesic in meters
+	// M12Reduced is the reduced length of the geodesic in meters.
+	//
+	// Reduced length:
+	//  If we fix the first point and increase azi1 by dazi1 (radians), the second point is displaced
+	//  m12 dazi1 in the direction azi2 + 90 degrees. The quantity m12 is called the "reduced length"
+	//  and is symmetric under interchange of the two points. On a curved surface the reduced length
+	//  obeys a symmetry relation, m12 + m21 = 0. On a flat surface, we have m12 = s12. The ratio
+	//  s12/m12 gives the azimuthal scale for an azimuthal equidistant projection.
 	M12Reduced() float64
 
 	// M12 is the geodesic scale of point 2 relative to point 1 (dimensionless)
+	//
+	// Geodesic scale:
+	//  Consider a reference geodesic and a second geodesic parallel to this one at point 1 and
+	//  separated by a small distance dt. The separation of the two geodesics at point 2 is M12 dt
+	//  where M12 is called the "geodesic scale". M21 is defined similarly (with the geodesics being
+	//  parallel at point 2). On a flat surface, we have M12 = M21 = 1. The quantity 1/M12 gives the
+	//  scale of the Cassini-Soldner projection.
 	M12() float64
 
 	// M21 is the geodesic scale of point 1 relative to point 2 (dimensionless)
+	//
+	// Geodesic scale:
+	//  Consider a reference geodesic and a second geodesic parallel to this one at point 1 and
+	//  separated by a small distance dt. The separation of the two geodesics at point 2 is M12 dt
+	//  where M12 is called the "geodesic scale". M21 is defined similarly (with the geodesics being
+	//  parallel at point 2). On a flat surface, we have M12 = M21 = 1. The quantity 1/M12 gives the
+	//  scale of the Cassini-Soldner projection.
 	M21() float64
 
 	// S12Area is the area under the geodesic (meters²)
+	//
+	// Area:
+	//  The area between the geodesic from point 1 to point 2 and the equation is represented by
+	//  S12Area; it is the area, measured counter-clockwise, of the geodesic quadrilateral with
+	//  corners (lat1,lon1), (0,lon1), (0,lon2), and (lat2,lon2). It can be used to compute the area
+	//  of any geodesic polygon.
 	S12Area() float64
 }
 

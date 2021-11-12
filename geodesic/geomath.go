@@ -7,7 +7,34 @@ import (
 const (
 	// digits represents the number of binary digits in the fraction of a double precision number.
 	// This is equivalent to C++'s numeric_limits<double>::digits.
-	digits = 53
+	digits        = 53
+	geodesicOrder = 6
+	nA1           = geodesicOrder
+	nC1           = geodesicOrder
+	nC1p          = geodesicOrder
+	nA2           = geodesicOrder
+	nC2           = geodesicOrder
+	nA3           = geodesicOrder
+	nA3x          = nA3
+	nC3           = geodesicOrder
+	nC3x          = (nC3 * (nC3 - 1)) / 2
+	nC4           = geodesicOrder
+	nC4x          = (nC4 * (nC4 + 1)) / 2
+	maxit1        = 20
+	maxit2        = maxit1 + digits + 10
+)
+
+var (
+	epsilon = math.Nextafter(1., 2.) - 1. // https://stackoverflow.com/a/22185792/4755732
+	// tiny is an underflow guard. We require tiny * epsilon > 0 and tiny + epsilon == epsilon. Note
+	// that we are using 2^-1022 here instead of math.SmallestNonzeroFloat64 to maintain consistency
+	// with other geographiclib implementations.
+	tiny    = math.Sqrt(math.Pow(2, -1022))
+	tol0    = epsilon
+	tol1    = 200 * tol0
+	tol2    = math.Sqrt(tol0)
+	tolb    = tol0 * tol2 // Check on bisection interval
+	xthresh = 1000 * tol2
 )
 
 // sq squares a number (and avoids the overhead of math.Pow)

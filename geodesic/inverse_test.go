@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInverse_CommonCases(t *testing.T) {
+func TestInverse(t *testing.T) {
 	for i, tt := range commonTestCases {
 		t.Run(fmt.Sprintf("common test case #%d", i), func(t *testing.T) {
 			r := WGS84.InverseWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Lat2(), tt.Lon2(), caps.All|caps.LongUnroll)
@@ -27,10 +27,8 @@ func TestInverse_CommonCases(t *testing.T) {
 			assert.InDelta(t, tt.S12Area(), r.S12Area(), 0.1)
 		})
 	}
-}
 
-func TestInverse_GeodSolveCases(t *testing.T) {
-	testCases := []geodSolve{
+	for _, testCase := range []geodSolve{
 		geodSolve0,
 		geodSolve2,
 		geodSolve4,
@@ -50,8 +48,7 @@ func TestInverse_GeodSolveCases(t *testing.T) {
 		geodSolve78,
 		geodSolve80,
 		geodSolve92,
-	}
-	for _, testCase := range testCases {
+	} {
 		t.Run(testCase.String(), testCase.logic)
 	}
 }

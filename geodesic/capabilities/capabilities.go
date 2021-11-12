@@ -38,7 +38,8 @@ const (
 	// Distance specifies: calculate distance s12.
 	Distance = 1<<10 | capC1
 
-	// All of the above, the "standard" output and capabilities.
+	// Standard specifies the default output and capabilities (latitudes, longitudes, azimuths, and
+	// distance)
 	Standard = Latitude | Longitude | Azimuth | Distance
 
 	// DistanceIn specifies: allow distance s12 to be used as input in the direct geodesic problem.
