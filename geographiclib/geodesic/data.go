@@ -1,11 +1,11 @@
-package geographiclib
+package geodesic
 
 import "math"
 
-// GeodesicData describes the characteristics of a geodesic between point 1 (Lat1, Lon1) and point 2
-// (Lat2, Lon2). Fields that have not been set will be filled by math.NaN. GeodesicData will always
-// include the field A12.
-type GeodesicData interface {
+// Data describes the characteristics of a geodesic between point 1 (Lat1, Lon1) and point 2 (Lat2,
+// Lon2). Fields that have not been set will be filled by math.NaN. Data will always include the
+// field A12.
+type Data interface {
 
 	// Lat1 is the latitude of point 1 in degrees
 	Lat1() float64
@@ -44,7 +44,7 @@ type GeodesicData interface {
 	S12Area() float64
 }
 
-type geodesicDataImpl struct {
+type dataImpl struct {
 	lat1       float64
 	lon1       float64
 	azi1       float64
@@ -59,8 +59,8 @@ type geodesicDataImpl struct {
 	s12Area    float64
 }
 
-func newGeodesicDataImpl() *geodesicDataImpl {
-	return &geodesicDataImpl{
+func newDataImpl() *dataImpl {
+	return &dataImpl{
 		lat1:       math.NaN(),
 		lon1:       math.NaN(),
 		azi1:       math.NaN(),
@@ -76,50 +76,50 @@ func newGeodesicDataImpl() *geodesicDataImpl {
 	}
 }
 
-func (g *geodesicDataImpl) Lat1() float64 {
+func (g *dataImpl) Lat1() float64 {
 	return g.lat1
 }
 
-func (g *geodesicDataImpl) Lon1() float64 {
+func (g *dataImpl) Lon1() float64 {
 	return g.lon1
 }
 
-func (g *geodesicDataImpl) Azi1() float64 {
+func (g *dataImpl) Azi1() float64 {
 	return g.azi1
 }
 
-func (g *geodesicDataImpl) Lat2() float64 {
+func (g *dataImpl) Lat2() float64 {
 	return g.lat2
 }
 
-func (g *geodesicDataImpl) Lon2() float64 {
+func (g *dataImpl) Lon2() float64 {
 	return g.lon2
 }
 
-func (g *geodesicDataImpl) Azi2() float64 {
+func (g *dataImpl) Azi2() float64 {
 	return g.azi2
 }
 
-func (g *geodesicDataImpl) S12() float64 {
+func (g *dataImpl) S12() float64 {
 	return g.s12
 }
 
-func (g *geodesicDataImpl) A12() float64 {
+func (g *dataImpl) A12() float64 {
 	return g.a12
 }
 
-func (g *geodesicDataImpl) M12Reduced() float64 {
+func (g *dataImpl) M12Reduced() float64 {
 	return g.m12Reduced
 }
 
-func (g *geodesicDataImpl) M12() float64 {
+func (g *dataImpl) M12() float64 {
 	return g.m12
 }
 
-func (g *geodesicDataImpl) M21() float64 {
+func (g *dataImpl) M21() float64 {
 	return g.m21
 }
 
-func (g *geodesicDataImpl) S12Area() float64 {
+func (g *dataImpl) S12Area() float64 {
 	return g.s12Area
 }

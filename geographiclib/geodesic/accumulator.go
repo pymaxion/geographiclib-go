@@ -1,4 +1,4 @@
-package geographiclib
+package geodesic
 
 // accumulator is an accumulator for sums.
 //

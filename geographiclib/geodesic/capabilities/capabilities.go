@@ -1,27 +1,28 @@
-package geographiclib
+package capabilities
 
-// This file defines bit masks for what geodesic calculations to do.
+// BitMask represents a set of geodesic calculations to perform as an integer bitmask.
 //
-// These masks do double duty. They specify (via the outmask parameter) which results to return in
-// the GeodesicData struct returned by the general functions Geodesic.Direct(double, double, double,
-// double, int) and Geodesic.Inverse(double, double, double, double, int) routines. They also
-// signify (via the caps parameter) to the NewGeodesicLine(Geodesic, double, double, double, int)
-// function and to Geodesic.Line(double, double, double, int) what capabilities should be included
-// in the GeodesicLine struct.
+// When used as an argument to Geodesic.DirectWithCapabilities and Geodesic.InverseWithCapabilities,
+// BitMask specifies which results to return in the GeodesicData struct.
+//
+// When used as an argument to NewGeodesicLineWithCapabilities and Geodesic.LineWithCapabilities,
+// BitMask specifies which capabilities should be included in the GeodesicLine struct.
+type BitMask int
+
 const (
-	capNone = 0
-	capC1   = 1 << 0
-	capC1p  = 1 << 1
-	capC2   = 1 << 2
-	capC3   = 1 << 3
-	capC4   = 1 << 4
-	capAll  = 0x1F
-	capMask = capAll
-	outAll  = 0x7F80
-	outMask = 0xFF80 // Include LongUnroll
+	capNone BitMask = 0
+	capC1   BitMask = 1 << 0
+	capC1p  BitMask = 1 << 1
+	capC2   BitMask = 1 << 2
+	capC3   BitMask = 1 << 3
+	capC4   BitMask = 1 << 4
+	capAll  BitMask = 0x1F
+	capMask         = capAll
+	outAll  BitMask = 0x7F80
+	OutMask BitMask = 0xFF80 // Include LongUnroll
 
 	// None specifies: no capabilities, no output.
-	None = 0
+	None BitMask = 0
 
 	// Latitude specifies: calculate latitude lat2. (It's not necessary to include this as a
 	// capability to GeodesicLine because this is included by default.)
@@ -56,5 +57,5 @@ const (
 	All = outAll | capAll
 
 	// LongUnroll specifies: unroll lon2.
-	LongUnroll = 1 << 15
+	LongUnroll BitMask = 1 << 15
 )

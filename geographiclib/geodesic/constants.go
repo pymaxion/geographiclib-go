@@ -1,6 +1,8 @@
-package geographiclib
+package geodesic
 
-import "math"
+import (
+	"math"
+)
 
 // Constants defining the WGS84 ellipsoid
 

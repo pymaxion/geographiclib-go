@@ -1,12 +1,15 @@
-package geographiclib
+package geodesic
 
 import (
 	"errors"
 	"math"
+
+	"geographiclib-go/geographiclib/geodesic/capabilities"
 )
 
 type Geodesic interface {
-	Inverse(lat1, lon1, lat2, lon2 float64, outmask int) GeodesicData
+	Inverse(lat1, lon1, lat2, lon2 float64) Data
+	InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, cs capabilities.BitMask) Data
 }
 
 func NewGeodesic(a, f float64) (Geodesic, error) {
@@ -115,7 +118,11 @@ func (g *geodesicImpl) c4f(eps float64, c []float64) {
 	}
 }
 
-func (g *geodesicImpl) Inverse(lat1, lon1, lat2, lon2 float64, outmask int) GeodesicData {
+func (g *geodesicImpl) Inverse(lat1, lon1, lat2, lon2 float64) Data {
+	return g.InverseWithCapabilities(lat1, lon1, lat2, lon2, capabilities.Standard)
+}
+
+func (g *geodesicImpl) InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Data {
 	solver := inverseSolver{g}
-	return solver.inverse(lat1, lon1, lat2, lon2, outmask)
+	return solver.inverse(lat1, lon1, lat2, lon2, mask)
 }

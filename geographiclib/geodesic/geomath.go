@@ -1,4 +1,4 @@
-package geographiclib
+package geodesic
 
 import (
 	"math"
