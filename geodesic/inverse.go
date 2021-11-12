@@ -3,7 +3,7 @@ package geodesic
 import (
 	"math"
 
-	caps "geographiclib-go/geographiclib/geodesic/capabilities"
+	caps "geographiclib-go/geodesic/capabilities"
 )
 
 type inverseSolver struct {
@@ -200,14 +200,14 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 				math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
 
 			for tripn, tripb := false, false; numit < maxit2; numit++ {
-				// the WGS84 test set: mean = 1.47, sd = 1.25, max = 16
+				// the WGS84 logic set: mean = 1.47, sd = 1.25, max = 16
 				// WGS84 and random input: mean = 2.85, sd = 0.60
 				var v, dv float64
 				v, salp2, calp2, sig12, ssig1, csig1, ssig2, csig2, eps, domg12, dv =
 					s.lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, salp1, calp1, slam12, clam12,
 						numit < maxit1,
 						c1a, c2a, c3a)
-				// Reversed test to allow escape with NaNs
+				// Reversed logic to allow escape with NaNs
 				if tripb || !(math.Abs(v) >= ternary(tripn, 8, 1)*tol0) {
 					break
 				}
@@ -236,9 +236,9 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 				// Either dV was not positive or updated value was outside legal range. Use the
 				// midpoint of the bracket as the next estimate. This mechanism is not needed for the
 				// WGS84 ellipsoid, but it does catch problems with more eccentric ellipsoids. Its
-				// efficacy is such for the WGS84 test set with the starting guess set to alp1 =
+				// efficacy is such for the WGS84 logic set with the starting guess set to alp1 =
 				// 90deg:
-				//  the WGS84 test set: mean = 5.21, sd = 3.93, max = 24
+				//  the WGS84 logic set: mean = 5.21, sd = 3.93, max = 24
 				//  WGS84 and random input: mean = 4.74, sd = 0.99
 				salp1, calp1 = (salp1a+salp1b)/2, (calp1a+calp1b)/2
 				salp1, calp1 = norm(salp1, calp1)

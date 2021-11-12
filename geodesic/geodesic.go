@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"geographiclib-go/geographiclib/geodesic/capabilities"
+	"geographiclib-go/geodesic/capabilities"
 )
 
 type Geodesic interface {

@@ -31,7 +31,11 @@ func atanh(x float64) float64 {
 
 // norm normalizes a sine/cosine pair (i.e., make sin²(x) + cos²(x) = 1)
 func norm(sinx, cosx float64) (float64, float64) {
-	r := math.Hypot(sinx, cosx)
+	// math.Hypot is inaccurate for 3.[89]. Problem reported by agdhruv
+	// https://github.com/geopy/geopy/issues/466; see
+	// https://bugs.python.org/issue43088
+	// Visual Studio 2015 32-bit has a similar problem.
+	r := math.Sqrt(sq(sinx) + sq(cosx))
 	return sinx / r, cosx / r
 }
 
