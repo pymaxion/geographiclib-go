@@ -103,6 +103,8 @@ type Geodesic interface {
 	ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Data
 	Inverse(lat1, lon1, lat2, lon2 float64) Data
 	InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Data
+	Line(lat1, lon1, azi1 float64) Line
+	LineWithCapabilities(lat1, lon1, azi1 float64, mask capabilities.BitMask) Line
 }
 
 // NewGeodesic creates a new instance of Geodesic with the given equatorial radius a (in meters) and
@@ -247,7 +249,8 @@ func (g *geodesicImpl) Direct(lat1, lon1, azi1, s12 float64) Data {
  See Direct for more details.
 */
 func (g *geodesicImpl) DirectWithCapabilities(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) Data {
-	panic("not yet implemented")
+	solver := directSolver{g}
+	return solver.direct(lat1, lon1, azi1, s12, mask)
 }
 
 /*
@@ -280,7 +283,8 @@ func (g *geodesicImpl) ArcDirect(lat1, lon1, azi1, a12 float64) Data {
  See ArcDirect for more details.
 */
 func (g *geodesicImpl) ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Data {
-	panic("not yet implemented")
+	solver := directSolver{g}
+	return solver.arcDirect(lat1, lon1, azi1, a12, mask)
 }
 
 /*
@@ -315,4 +319,12 @@ func (g *geodesicImpl) Inverse(lat1, lon1, lat2, lon2 float64) Data {
 func (g *geodesicImpl) InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Data {
 	solver := inverseSolver{g}
 	return solver.inverse(lat1, lon1, lat2, lon2, mask)
+}
+
+func (g *geodesicImpl) Line(lat1, lon1, azi1 float64) Line {
+	return g.LineWithCapabilities(lat1, lon1, azi1, capabilities.All)
+}
+
+func (g *geodesicImpl) LineWithCapabilities(lat1, lon1, azi1 float64, mask capabilities.BitMask) Line {
+	return newLineImpl(g, lat1, lon1, azi1, math.NaN(), math.NaN(), mask)
 }

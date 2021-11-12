@@ -481,6 +481,33 @@ func c1f(eps float64, c []float64) {
 	}
 }
 
+// c1pf computes the coefficients C1p[l] in the Fourier expansion of B1p
+func c1pf(eps float64, c []float64) {
+	coeff := []float64{
+		// C1p[1]/eps^1, polynomial in eps2 of order 2
+		205, -432, 768, 1536,
+		// C1p[2]/eps^2, polynomial in eps2 of order 2
+		4005, -4736, 3840, 12288,
+		// C1p[3]/eps^3, polynomial in eps2 of order 1
+		-225, 116, 384,
+		// C1p[4]/eps^4, polynomial in eps2 of order 1
+		-7173, 2695, 7680,
+		// C1p[5]/eps^5, polynomial in eps2 of order 0
+		3467, 7680,
+		// C1p[6]/eps^6, polynomial in eps2 of order 0
+		38081, 61440,
+	}
+	eps2 := sq(eps)
+	d := eps
+	o := 0
+	for l := 1; l <= nC1p; l++ { // l is index of C1p[l]
+		m := (nC1p - l) / 2 // order of polynomial in eps^2
+		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+		o += m + 2
+		d *= eps
+	}
+}
+
 // a2m1f calculates the scale factor A2-1 = mean value of (d/dsigma)I2 - 1
 func a2m1f(eps float64) float64 {
 	coeff := []float64{

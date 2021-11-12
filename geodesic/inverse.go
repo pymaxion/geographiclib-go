@@ -3,27 +3,27 @@ package geodesic
 import (
 	"math"
 
-	caps "geographiclib-go/geodesic/capabilities"
+	"geographiclib-go/geodesic/capabilities"
 )
 
 type inverseSolver struct {
 	*geodesicImpl
 }
 
-func (s *inverseSolver) inverse(lat1, lon1, lat2, lon2 float64, mask caps.BitMask) *dataImpl {
+func (s *inverseSolver) inverse(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) *dataImpl {
 	var salp1, calp1, salp2, calp2 float64
 	r := newDataImpl()
-	mask &= caps.OutMask
+	mask &= capabilities.OutMask
 
 	r.lat1, r.lon1, r.lat2, r.lon2, r.a12, r.s12, salp1, calp1, salp2, calp2, r.m12Reduced, r.m12, r.m21, r.s12Area =
 		s.genInverse(lat1, lon1, lat2, lon2, mask)
-	if (mask & caps.Azimuth) != 0 {
+	if (mask & capabilities.Azimuth) != 0 {
 		r.azi1, r.azi2 = atan2d(salp1, calp1), atan2d(salp2, calp2)
 	}
 	return r
 }
 
-func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.BitMask) (lat1Out, lon1Out, lat2Out, lon2Out,
+func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) (lat1Out, lon1Out, lat2Out, lon2Out,
 	a12, s12, salp1, calp1, salp2, calp2, m12, M12, M21, S12 float64) {
 
 	a12, s12, m12, M12, M21, S12 = math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
@@ -36,7 +36,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 	// If really close to the equator, treat as on equator.
 	lat1, lat2 = angRound(lat1), angRound(lat2)
 	lon12, lon12s := angDiff(lon1, lon2)
-	if (mask & caps.LongUnroll) != 0 {
+	if (mask & capabilities.LongUnroll) != 0 {
 		lon1Out, lon2Out = lon1, (lon1+lon12)+lon12s
 	} else {
 		lon1Out, lon2Out = angNormalize(lon1), angNormalize(lon2)
@@ -122,7 +122,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 		sig12 = math.Atan2(math.Max(0.0, csig1*ssig2-ssig1*csig2), csig1*csig2+ssig1*ssig2)
 
 		s12x, m12x, _, M12, M21 = s.lengths(s.n, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2,
-			mask|caps.Distance|caps.ReducedLength,
+			mask|capabilities.Distance|capabilities.ReducedLength,
 			c1a, c2a)
 		// Add the check for sig12 since zero length geodesics might yield m12 < 0. Test case was:
 		//
@@ -156,7 +156,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 		sig12 = lam12 / s.f1
 		omg12 = sig12
 		m12x = s.b * math.Sin(sig12)
-		if (mask & caps.GeodesicScale) != 0 {
+		if (mask & capabilities.GeodesicScale) != 0 {
 			M12 = math.Cos(sig12)
 			M21 = M12
 		}
@@ -174,7 +174,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 			// Short lines (InverseStart sets salp2, calp2, dnm)
 			s12x = sig12 * s.b * dnm
 			m12x = sq(dnm) * s.b * math.Sin(sig12/dnm)
-			if (mask & caps.GeodesicScale) != 0 {
+			if (mask & capabilities.GeodesicScale) != 0 {
 				M12 = math.Cos(sig12 / dnm)
 				M21 = M12
 			}
@@ -219,7 +219,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 				}
 				if numit < maxit1 && dv > 0 {
 					dalp1 := -v / dv
-					sdalp1, cdalp1 := math.Sin(dalp1), math.Cos(dalp1)
+					sdalp1, cdalp1 := math.Sincos(dalp1)
 					nsalp1 := salp1*cdalp1 + calp1*sdalp1
 					if nsalp1 > 0 && math.Abs(dalp1) < math.Pi {
 						calp1 = calp1*cdalp1 - salp1*sdalp1
@@ -249,11 +249,11 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 
 			// Ensure that the reduced length and geodesic scale are computed in
 			// a "canonical" way, with the I2 integral.
-			var lengthmask caps.BitMask
-			if mask&(caps.ReducedLength|caps.GeodesicScale) != 0 {
-				lengthmask = caps.OutMask | caps.Distance
+			var lengthmask capabilities.BitMask
+			if mask&(capabilities.ReducedLength|capabilities.GeodesicScale) != 0 {
+				lengthmask = capabilities.OutMask | capabilities.Distance
 			} else {
-				lengthmask = caps.OutMask | caps.None
+				lengthmask = capabilities.OutMask | capabilities.None
 			}
 			s12x, m12x, _, M12, M21 = s.lengths(eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2,
 				lengthmask,
@@ -261,22 +261,22 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 			m12x *= s.b
 			s12x *= s.b
 			a12 = rad2deg(sig12)
-			if (mask & caps.Area) != 0 {
+			if (mask & capabilities.Area) != 0 {
 				// omg12 = lam12 - domg12
-				sdomg12, cdomg12 := math.Sin(domg12), math.Cos(domg12)
+				sdomg12, cdomg12 := math.Sincos(domg12)
 				somg12 = slam12*cdomg12 - clam12*sdomg12
 				comg12 = clam12*cdomg12 + slam12*sdomg12
 			}
 		}
 	} // end elif not meridian
 
-	if (mask & caps.Distance) != 0 {
+	if (mask & capabilities.Distance) != 0 {
 		s12 = 0 + s12x // Convert -0 to 0
 	}
-	if (mask & caps.ReducedLength) != 0 {
+	if (mask & capabilities.ReducedLength) != 0 {
 		m12 = 0 + m12x // Convert -0 to 0
 	}
-	if (mask & caps.Area) != 0 {
+	if (mask & capabilities.Area) != 0 {
 		// From lambda12: sin(alp1) * cos(bet1) = sin(alp0)
 		salp0 := salp1 * cbet1
 		calp0 := math.Hypot(calp1, salp1*sbet1) // calp0 > 0
@@ -302,7 +302,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 		}
 
 		if !meridian && somg12 > 1 {
-			somg12, comg12 = math.Sin(omg12), math.Cos(omg12)
+			somg12, comg12 = math.Sincos(omg12)
 		}
 
 		if !meridian && comg12 > -0.7071 && // Long difference not too big
@@ -335,7 +335,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 	if swapp < 0 {
 		salp2, salp1 = salp1, salp2
 		calp2, calp1 = calp1, calp2
-		if (mask & caps.GeodesicScale) != 0 {
+		if (mask & capabilities.GeodesicScale) != 0 {
 			M21, M12 = M12, M21
 		}
 	}
@@ -349,19 +349,19 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, mask caps.Bit
 
 func (s *inverseSolver) lengths(
 	eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2 float64,
-	mask caps.BitMask,
+	mask capabilities.BitMask,
 	c1a, c2a []float64) (s12b, m12b, m0, M12, M21 float64) {
 
 	s12b, m12b, m0, M12, M21 = math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
 
 	// Return m12b = (reduced length)/b; also calculate s12b = distance/b, and m0 = coefficient of
 	// secular term in expression for reduced length.
-	mask &= caps.OutMask
+	mask &= capabilities.OutMask
 	var m0x, j12, a1, a2 float64
-	if (mask & (caps.Distance | caps.ReducedLength | caps.GeodesicScale)) != 0 {
+	if (mask & (capabilities.Distance | capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
 		a1 = a1m1f(eps)
 		c1f(eps, c1a)
-		if (mask & (caps.ReducedLength | caps.GeodesicScale)) != 0 {
+		if (mask & (capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
 			a2 = a2m1f(eps)
 			c2f(eps, c2a)
 			m0x = a1 - a2
@@ -370,15 +370,15 @@ func (s *inverseSolver) lengths(
 		a1 = 1 + a1
 	}
 
-	if (mask & caps.Distance) != 0 {
+	if (mask & capabilities.Distance) != 0 {
 		b1 := sinCosSeries(true, ssig2, csig2, c1a) - sinCosSeries(true, ssig1, csig1, c1a)
 		// Missing a factor of b
 		s12b = a1 * (sig12 + b1)
-		if (mask & (caps.ReducedLength | caps.GeodesicScale)) != 0 {
+		if (mask & (capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
 			b2 := sinCosSeries(true, ssig2, csig2, c2a) - sinCosSeries(true, ssig1, csig1, c2a)
 			j12 = m0x*sig12 + (a1*b1 - a2*b2)
 		}
-	} else if (mask & (caps.ReducedLength | caps.GeodesicScale)) != 0 {
+	} else if (mask & (capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
 		// Assume here that nC1 >= nC2
 		for l := 1; l <= nC2; l++ {
 			c2a[l] = a1*c1a[l] - a2*c2a[l]
@@ -386,7 +386,7 @@ func (s *inverseSolver) lengths(
 		j12 = m0x*sig12 + (sinCosSeries(true, ssig2, csig2, c2a) - sinCosSeries(true, ssig1, csig1, c2a))
 	}
 
-	if (mask & caps.ReducedLength) != 0 {
+	if (mask & capabilities.ReducedLength) != 0 {
 		m0 = m0x
 		// Missing a factor of b.
 		// Add parens around (csig1 * ssig2) and (ssig1 * csig2) to ensure
@@ -394,7 +394,7 @@ func (s *inverseSolver) lengths(
 		m12b = dn2*(csig1*ssig2) - dn1*(ssig1*csig2) - csig1*csig2*j12
 	}
 
-	if (mask & caps.GeodesicScale) != 0 {
+	if (mask & capabilities.GeodesicScale) != 0 {
 		csig12 := csig1*csig2 + ssig1*ssig2
 		t := s.ep2 * (cbet1 - cbet2) * (cbet1 + cbet2) / (dn1 + dn2)
 		M12 = csig12 + (t*ssig2-csig2*j12)*ssig1/dn1
@@ -426,7 +426,7 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 		sbetm2 /= sbetm2 + sq(cbet1+cbet2)
 		dnm = math.Sqrt(1 + s.ep2*sbetm2)
 		omg12 := lam12 / (s.f1 * dnm)
-		somg12, comg12 = math.Sin(omg12), math.Cos(omg12)
+		somg12, comg12 = math.Sincos(omg12)
 	} else {
 		somg12, comg12 = slam12, clam12
 	}
@@ -477,7 +477,7 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 			// In the case of lon12 = 180, this repeats a calculation made in
 			// Inverse.
 			_, m12b, m0, _, _ := s.lengths(s.n, math.Pi+bet12a, sbet1, -cbet1, dn1, sbet2, cbet2, dn2, cbet1, cbet2,
-				caps.ReducedLength,
+				capabilities.ReducedLength,
 				c1a, c2a)
 			x = -1 + m12b/(cbet1*cbet2*m0*math.Pi)
 			if x < -0.01 {
@@ -539,7 +539,8 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 				t = -y * (1 + k) / k
 			}
 			omg12a := lamscale * t
-			somg12, comg12 = math.Sin(omg12a), -math.Cos(omg12a)
+			somg12, comg12 = math.Sincos(omg12a)
+			comg12 *= -1
 			// Update spherical estimate of alp1 using omg12 instead of lam12
 			salp1 = cbet2 * somg12
 			calp1 = sbet12a - cbet2*sbet1*sq(somg12)/(1-comg12)
@@ -686,7 +687,7 @@ func (s *inverseSolver) lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, salp1, ca
 			dlam12 = -2 * s.f1 * dn1 / sbet1
 		} else {
 			_, dlam12, _, _, _ = s.lengths(eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2,
-				caps.ReducedLength,
+				capabilities.ReducedLength,
 				c1a, c2a)
 			dlam12 *= s.f1 / (calp2 * cbet2)
 		}

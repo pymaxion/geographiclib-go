@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	caps "geographiclib-go/geodesic/capabilities"
+	"geographiclib-go/geodesic/capabilities"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -119,6 +119,17 @@ var (
 		},
 	}
 
+	geodSolve1 = geodSolve{
+		testNum:     1,
+		description: "",
+		logic: func(t *testing.T) {
+			r := WGS84.Direct(40.63972222, -73.77888889, 53.5, 5850e3)
+			assert.InDelta(t, 49.01467, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, 2.56106, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 111.62947, r.Azi2(), 0.5e-5)
+		},
+	}
+
 	geodSolve2 = geodSolve{
 		testNum:     2,
 		description: "Check fix for antipodal prolate bug found 2010-09-04",
@@ -144,6 +155,22 @@ var (
 		logic: func(t *testing.T) {
 			r := WGS84.Inverse(36.493349428792, 0, 36.49334942879201, .0000008)
 			assert.InDelta(t, 0.072, r.S12(), 0.5e-3)
+		},
+	}
+
+	geodSolve5 = geodSolve{
+		testNum:     5,
+		description: "Check fix for point2=pole bug found 2010-05-03",
+		logic: func(t *testing.T) {
+			r := WGS84.Direct(0.01777745589997, 30, 0, 10e6)
+			assert.InDelta(t, 90, r.Lat2(), 0.5e-5)
+			if r.Lon2() < 0 {
+				assert.InDelta(t, -150, r.Lon2(), 0.5e-5)
+				assert.InDelta(t, 180, math.Abs(r.Azi2()), 0.5e-5)
+			} else {
+				assert.InDelta(t, 30, r.Lon2(), 0.5e-5)
+				assert.InDelta(t, 0, r.Azi2(), 0.5e-5)
+			}
 		},
 	}
 
@@ -214,6 +241,45 @@ var (
 		},
 	}
 
+	geodSolve15 = geodSolve{
+		testNum:     15,
+		description: "Initial implementation of Math::eatanhe was wrong for e^2 < 0. This checks that this is fixed.",
+		logic: func(t *testing.T) {
+			geod, err := NewGeodesic(6.4e6, -1/150.0)
+			require.Nil(t, err)
+
+			r := geod.DirectWithCapabilities(1, 2, 3, 4, capabilities.Area)
+			assert.InDelta(t, 23700, r.S12Area(), 0.5)
+		},
+	}
+
+	geodSolve17 = geodSolve{
+		testNum:     17,
+		description: "Check fix for LONG_UNROLL bug found on 2015-05-07",
+		logic: func(t *testing.T) {
+			r := WGS84.DirectWithCapabilities(40, -75, -10, 2e7, capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, -39, r.Lat2(), 1)
+			assert.InDelta(t, -254, r.Lon2(), 1)
+			assert.InDelta(t, -170, r.Azi2(), 1)
+
+			line := WGS84.Line(40, -75, -10)
+			r = line.PositionWithCapabilities(2e7, capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, -39, r.Lat2(), 1)
+			assert.InDelta(t, -254, r.Lon2(), 1)
+			assert.InDelta(t, -170, r.Azi2(), 1)
+
+			r = WGS84.Direct(40, -75, -10, 2e7)
+			assert.InDelta(t, -39, r.Lat2(), 1)
+			assert.InDelta(t, 105, r.Lon2(), 1)
+			assert.InDelta(t, -170, r.Azi2(), 1)
+
+			r = line.Position(2e7)
+			assert.InDelta(t, -39, r.Lat2(), 1)
+			assert.InDelta(t, 105, r.Lon2(), 1)
+			assert.InDelta(t, -170, r.Azi2(), 1)
+		},
+	}
+
 	geodSolve26 = geodSolve{
 		testNum:     26,
 		description: "Check 0/0 problem with area calculation on sphere 2015-09-08",
@@ -221,8 +287,20 @@ var (
 			geod, err := NewGeodesic(6.4e6, 0)
 			require.Nil(t, err)
 
-			r := geod.InverseWithCapabilities(1, 2, 3, 4, caps.Area)
+			r := geod.InverseWithCapabilities(1, 2, 3, 4, capabilities.Area)
 			assert.InDelta(t, 49911046115.0, r.S12Area(), 0.5)
+		},
+	}
+
+	geodSolve28 = geodSolve{
+		testNum:     28,
+		description: "Check for bad placement of assignment of r.a12 with |f| > 0.01 (bug in Java implementation fixed on 2015-05-19).",
+		logic: func(t *testing.T) {
+			geod, err := NewGeodesic(6.4e6, 0.1)
+			require.Nil(t, err)
+
+			r := geod.Direct(1, 2, 10, 5e6)
+			assert.InDelta(t, 48.55570690, r.A12(), 0.5e-8)
 		},
 	}
 
@@ -235,7 +313,7 @@ var (
 			assert.InDelta(t, -179, r.Lon2(), 1e-10)
 			assert.InDelta(t, 222639, r.S12(), 0.5)
 
-			r = WGS84.InverseWithCapabilities(0, 539, 0, 181, caps.Standard|caps.LongUnroll)
+			r = WGS84.InverseWithCapabilities(0, 539, 0, 181, capabilities.Standard|capabilities.LongUnroll)
 			assert.InDelta(t, 539, r.Lon1(), 1e-10)
 			assert.InDelta(t, 541, r.Lon2(), 1e-10)
 			assert.InDelta(t, 222639, r.S12(), 0.5)
@@ -340,7 +418,7 @@ var (
 		testNum:     74,
 		description: "Check fix for inaccurate areas, bug introduced in v1.46, fixed 2015-10-16.",
 		logic: func(t *testing.T) {
-			r := WGS84.InverseWithCapabilities(54.1589, 15.3872, 54.1591, 15.3877, caps.All)
+			r := WGS84.InverseWithCapabilities(54.1589, 15.3872, 54.1591, 15.3877, capabilities.All)
 			assert.InDelta(t, 55.723110355, r.Azi1(), 5e-9)
 			assert.InDelta(t, 55.723515675, r.Azi2(), 5e-9)
 			assert.InDelta(t, 39.527686385, r.S12(), 5e-9)
@@ -379,15 +457,15 @@ var (
 		testNum:     80,
 		description: "Some tests to add code coverage: computing scale in special cases + zero length geodesic (includes GeodSolve80 - GeodSolve83).",
 		logic: func(t *testing.T) {
-			r := WGS84.InverseWithCapabilities(0, 0, 0, 90, caps.GeodesicScale)
+			r := WGS84.InverseWithCapabilities(0, 0, 0, 90, capabilities.GeodesicScale)
 			assert.InDelta(t, -0.00528427534, r.M12(), 0.5e-10)
 			assert.InDelta(t, -0.00528427534, r.M21(), 0.5e-10)
 
-			r = WGS84.InverseWithCapabilities(0, 0, 1e-6, 1e-6, caps.GeodesicScale)
+			r = WGS84.InverseWithCapabilities(0, 0, 1e-6, 1e-6, capabilities.GeodesicScale)
 			assert.InDelta(t, 1, r.M12(), 0.5e-10)
 			assert.InDelta(t, 1, r.M21(), 0.5e-10)
 
-			r = WGS84.InverseWithCapabilities(20.001, 0, 20.001, 0, caps.All)
+			r = WGS84.InverseWithCapabilities(20.001, 0, 20.001, 0, capabilities.All)
 			assert.InDelta(t, 0, r.A12(), 1e-13)
 			assert.InDelta(t, 0, r.S12(), 1e-8)
 			assert.InDelta(t, 180, r.Azi1(), 1e-13)
@@ -400,7 +478,7 @@ var (
 			assert.False(t, math.Signbit(r.S12()))
 			assert.False(t, math.Signbit(r.M12Reduced()))
 
-			r = WGS84.InverseWithCapabilities(90, 0, 90, 180, caps.All)
+			r = WGS84.InverseWithCapabilities(90, 0, 90, 180, capabilities.All)
 			assert.InDelta(t, 0, r.A12(), 1e-13)
 			assert.InDelta(t, 0, r.S12(), 1e-8)
 			assert.InDelta(t, 0, r.Azi1(), 1e-13)
@@ -410,11 +488,10 @@ var (
 			assert.InDelta(t, 1, r.M21(), 1e-15)
 			assert.InDelta(t, 127516405431022.0, r.S12Area(), 0.5)
 
-			// TODO
 			// An incapable line which can't take distance as input
-			//GeodesicLine line = WGS84.Line(1, 2, 90, caps.Latitude)
-			//GeodesicData dir = line.Position(1000, caps.None)
-			//assert.True(t, math.IsNaN(dir.A12()))
+			line := WGS84.LineWithCapabilities(1, 2, 90, capabilities.Latitude)
+			r = line.PositionWithCapabilities(1000, capabilities.None)
+			assert.True(t, math.IsNaN(r.A12()))
 		},
 	}
 
