@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	caps "geographiclib-go/geodesic/capabilities"
+	"geographiclib-go/geodesic/capabilities"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +12,7 @@ import (
 func TestInverse(t *testing.T) {
 	for i, tt := range commonTestCases {
 		t.Run(fmt.Sprintf("common test case #%d", i), func(t *testing.T) {
-			r := WGS84.InverseWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Lat2(), tt.Lon2(), caps.All|caps.LongUnroll)
+			r := WGS84.InverseWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Lat2(), tt.Lon2(), capabilities.All|capabilities.LongUnroll)
 			assert.InDelta(t, tt.Lat1(), r.Lat1(), 1e-13)
 			assert.InDelta(t, tt.Lon1(), r.Lon1(), 1e-13)
 			assert.InDelta(t, tt.Lat2(), r.Lat2(), 1e-13)

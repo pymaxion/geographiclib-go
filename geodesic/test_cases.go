@@ -414,6 +414,99 @@ var (
 		},
 	}
 
+	geodSolve61 = geodSolve{
+		testNum:     61,
+		description: "Make sure small negative azimuths are west-going",
+		logic: func(t *testing.T) {
+			r := WGS84.DirectWithCapabilities(45, 0, -0.000000000000000003, 1e7, capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, 45.30632, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -180, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 180, math.Abs(r.Azi2()), 0.5e-5)
+
+			l := WGS84.InverseLine(45, 0, 80, -0.000000000000000003)
+			r = l.PositionWithCapabilities(1e7, capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, 45.30632, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -180, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 180, math.Abs(r.Azi2()), 0.5e-5)
+		},
+	}
+
+	geodSolve65 = geodSolve{
+		testNum:     65,
+		description: "Check for bug in east-going check in GeodesicLine (needed to check for sign of 0) and sign error in area calculation due to a bogus override of the code for alp12.  Found/fixed on 2015-12-19.",
+		logic: func(t *testing.T) {
+			l := WGS84.InverseLine(30, -0.000000000000000001, -31, 180)
+			r := l.PositionWithCapabilities(1e7, capabilities.All|capabilities.LongUnroll)
+			assert.InDelta(t, 30.00000, r.Lat1(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Lon1(), 0.5e-5)
+			assert.InDelta(t, 180.00000, math.Abs(r.Azi1()), 0.5e-5)
+			assert.InDelta(t, -60.23169, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 180.00000, math.Abs(r.Azi2()), 0.5e-5)
+			assert.InDelta(t, 10000000, r.S12(), 0.5)
+			assert.InDelta(t, 90.06544, r.A12(), 0.5e-5)
+			assert.InDelta(t, 6363636, r.M12Reduced(), 0.5)
+			assert.InDelta(t, -0.0012834, r.M12(), 0.5e7)
+			assert.InDelta(t, 0.0013749, r.M21(), 0.5e-7)
+			assert.InDelta(t, 0, r.S12Area(), 0.5)
+
+			r = l.PositionWithCapabilities(2e7, capabilities.All|capabilities.LongUnroll)
+			assert.InDelta(t, 30.00000, r.Lat1(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Lon1(), 0.5e-5)
+			assert.InDelta(t, 180.00000, math.Abs(r.Azi1()), 0.5e-5)
+			assert.InDelta(t, -30.03547, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -180.00000, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Azi2(), 0.5e-5)
+			assert.InDelta(t, 20000000, r.S12(), 0.5)
+			assert.InDelta(t, 179.96459, r.A12(), 0.5e-5)
+			assert.InDelta(t, 54342, r.M12Reduced(), 0.5)
+			assert.InDelta(t, -1.0045592, r.M12(), 0.5e7)
+			assert.InDelta(t, -0.9954339, r.M21(), 0.5e-7)
+			assert.InDelta(t, 127516405431022.0, r.S12Area(), 0.5)
+		},
+	}
+
+	geodSolve69 = geodSolve{
+		testNum:     69,
+		description: "Check for InverseLine if line is slightly west of S and that s13 is correctly set.",
+		logic: func(t *testing.T) {
+			l := WGS84.InverseLine(-5, -0.000000000000002, -10, 180)
+			r := l.PositionWithCapabilities(2e7, capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, 4.96445, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -180.00000, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Azi2(), 0.5e-5)
+
+			r = l.PositionWithCapabilities(0.5*l.Distance(), capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, -87.52461, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -0.00000, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, -180.00000, r.Azi2(), 0.5e-5)
+		},
+	}
+
+	geodSolve71 = geodSolve{
+		testNum:     71,
+		description: "Check that DirectLine sets s13.",
+		logic: func(t *testing.T) {
+			l := WGS84.DirectLine(1, 2, 45, 1e7)
+			r := l.PositionWithCapabilities(0.5*l.Distance(), capabilities.Standard|capabilities.LongUnroll)
+			assert.InDelta(t, 30.92625, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, 37.54640, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 55.43104, r.Azi2(), 0.5e-5)
+		},
+	}
+
+	geodSolve73 = geodSolve{
+		testNum:     73,
+		description: "Check for backwards from the pole bug reported by Anon on 2016-02-13. This only affected the Java implementation. It was introduced in Java version 1.44 and fixed in 1.46-SNAPSHOT on 2016-01-17. Also the + sign on azi2 is a check on the normalizing of azimuths (converting -0.0 to +0.0).",
+		logic: func(t *testing.T) {
+			r := WGS84.Direct(90, 10, 180, -1e6)
+			assert.InDelta(t, 81.04623, r.Lat2(), 0.5e-5)
+			assert.InDelta(t, -170, r.Lon2(), 0.5e-5)
+			assert.InDelta(t, 0, r.Azi2(), 0.5e-5)
+			assert.False(t, math.Signbit(r.Azi2()))
+		},
+	}
+
 	geodSolve74 = geodSolve{
 		testNum:     74,
 		description: "Check fix for inaccurate areas, bug introduced in v1.46, fixed 2015-10-16.",
@@ -492,6 +585,52 @@ var (
 			line := WGS84.LineWithCapabilities(1, 2, 90, capabilities.Latitude)
 			r = line.PositionWithCapabilities(1000, capabilities.None)
 			assert.True(t, math.IsNaN(r.A12()))
+		},
+	}
+
+	geodSolve84 = geodSolve{
+		testNum:     84,
+		description: "Tests for python implementation to check fix for range errors with {fmod,sin,cos}(inf) (includes GeodSolve84 - GeodSolve91).",
+		logic: func(t *testing.T) {
+			r := WGS84.Direct(0, 0, 90, math.Inf(1))
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
+
+			r = WGS84.Direct(0, 0, 90, math.NaN())
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
+
+			r = WGS84.Direct(0, 0, math.Inf(1), 1000)
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
+
+			r = WGS84.Direct(0, 0, math.NaN(), 1000)
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
+
+			r = WGS84.Direct(0, math.Inf(1), 90, 1000)
+			assert.True(t, r.Lat2() == 0)
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, r.Azi2() == 90)
+
+			r = WGS84.Direct(0, math.NaN(), 90, 1000)
+			assert.True(t, r.Lat2() == 0)
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, r.Azi2() == 90)
+
+			r = WGS84.Direct(math.Inf(1), 0, 90, 1000)
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
+
+			r = WGS84.Direct(math.NaN(), 0, 90, 1000)
+			assert.True(t, math.IsNaN(r.Lat2()))
+			assert.True(t, math.IsNaN(r.Lon2()))
+			assert.True(t, math.IsNaN(r.Azi2()))
 		},
 	}
 

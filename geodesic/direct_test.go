@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	caps "geographiclib-go/geodesic/capabilities"
+	"geographiclib-go/geodesic/capabilities"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +12,7 @@ import (
 func TestDirect(t *testing.T) {
 	for i, tt := range commonTestCases {
 		t.Run(fmt.Sprintf("common test case #%d", i), func(t *testing.T) {
-			r := WGS84.DirectWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Azi1(), tt.S12(), caps.All|caps.LongUnroll)
+			r := WGS84.DirectWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Azi1(), tt.S12(), capabilities.All|capabilities.LongUnroll)
 			assert.InDelta(t, tt.Lat1(), r.Lat1(), 1e-13)
 			assert.InDelta(t, tt.Lon1(), r.Lon1(), 1e-13)
 			assert.InDelta(t, tt.Lat2(), r.Lat2(), 1e-13)
@@ -34,6 +34,9 @@ func TestDirect(t *testing.T) {
 		geodSolve15,
 		geodSolve17,
 		geodSolve28,
+		geodSolve61,
+		geodSolve73,
+		geodSolve84,
 	} {
 		t.Run(testCase.String(), testCase.logic)
 	}
@@ -42,7 +45,7 @@ func TestDirect(t *testing.T) {
 func TestArcDirect(t *testing.T) {
 	for i, tt := range commonTestCases {
 		t.Run(fmt.Sprintf("common test case #%d", i), func(t *testing.T) {
-			r := WGS84.ArcDirectWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Azi1(), tt.A12(), caps.All|caps.LongUnroll)
+			r := WGS84.ArcDirectWithCapabilities(tt.Lat1(), tt.Lon1(), tt.Azi1(), tt.A12(), capabilities.All|capabilities.LongUnroll)
 			assert.InDelta(t, tt.Lat1(), r.Lat1(), 1e-13)
 			assert.InDelta(t, tt.Lon1(), r.Lon1(), 1e-13)
 			assert.InDelta(t, tt.Lat2(), r.Lat2(), 1e-13)

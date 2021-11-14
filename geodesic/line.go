@@ -6,11 +6,52 @@ import (
 	"geographiclib-go/geodesic/capabilities"
 )
 
+/*
+ Line represents a geodesic line and facilitates the determination of a series of points on a single
+ geodesic. Geodesic.Line method should be used to create an instance of Line.
+
+ Position returns the location of point 2 a distance s12 along the geodesic. Alternatively,
+ ArcPosition gives the position of point 2 an arc length a12 along the geodesic. The additional
+ functions PositionWithCapabilities and ArcPositionWithCapabilities include an optional final
+ argument of type capabilities.BitMask to allow you to specify which results should be computed and
+ returned.
+
+ You can register the position of a reference point 3 a distance (arc
+ length), s13 (a13) along the geodesic with the
+ {@link #SetDistance SetDistance} ({@link #SetArc SetArc}) functions. Points
+ a fractional distance along the line can be found by providing, for example,
+ 0.5 * {@link #Distance} as an argument to {@link #Position Position}. The
+ {@link Geodesic#InverseLine Geodesic.InverseLine} or
+ {@link Geodesic#DirectLine Geodesic.DirectLine} methods return GeodesicLine
+ objects with point 3 set to the point 2 of the corresponding geodesic
+ problem. GeodesicLine objects created with the public constructor or with
+ {@link Geodesic#Line Geodesic.Line} have s13 and a13 set to
+ NaNs.
+
+ The calculations are accurate to better than 15 nm (15 nanometers). See
+ Sec. 9 of
+ <a href="https://arxiv.org/abs/1102.1215v1">arXiv:1102.1215v1</a> for
+ details. The algorithms used by this class are based on series expansions
+ using the flattening f as a small parameter. These are only accurate
+ for |f| < 0.02; however reasonably accurate results will be
+ obtained for |f| < 0.2.
+
+ The algorithms are described in
+
+
+  C. F. F. Karney,
+  <a href="https://doi.org/10.1007/s00190-012-0578-z">
+  Algorithms for geodesics</a>,
+  J. Geodesy 87, 43-55 (2013)
+  (<a href="https://geographiclib.sourceforge.io/geod-addenda.html">addenda</a>).
+*/
 type Line interface {
 	Position(s12 float64) Data
 	PositionWithCapabilities(s12 float64, mask capabilities.BitMask) Data
 	ArcPosition(a12 float64) Data
 	ArcPositionWithCapabilities(a12 float64, mask capabilities.BitMask) Data
+	Distance() float64
+	Arc() float64
 }
 
 // lineImpl is an unexported implementation of the Line interface
@@ -92,10 +133,11 @@ func newLineImpl(g *geodesicImpl, lat1, lon1, azi1, salp1, calp1 float64, mask c
 	k2 := sq(calp0) * g.ep2
 	eps := k2 / (2*(1+math.Sqrt(1+k2)) + k2)
 
-	var stau1, ctau1, a1m1, a2m1, a3c, b11, b21, b31, a4, b41, a13, s13 float64
+	var stau1, ctau1, a1m1, a2m1, a3c, b11, b21, b31, a4, b41 = math.NaN(), math.NaN(), math.NaN(),
+		math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
 	var c1a, c1pa, c2a, c3a, c4a []float64
 
-	if (mask & capabilities.CapC1) != 0 {
+	if (mask & capabilities.C1) != 0 {
 		a1m1 = a1m1f(eps)
 		c1a = make([]float64, nC1+1)
 		c1f(eps, c1a)
@@ -108,26 +150,26 @@ func newLineImpl(g *geodesicImpl, lat1, lon1, azi1, salp1, calp1 float64, mask c
 		// b11 = -sinCosSeries(true, stau1, ctau1, c1pa, nC1p)
 	}
 
-	if (mask & capabilities.CapC1p) != 0 {
+	if (mask & capabilities.C1p) != 0 {
 		c1pa = make([]float64, nC1p+1)
 		c1pf(eps, c1pa)
 	}
 
-	if (mask & capabilities.CapC2) != 0 {
+	if (mask & capabilities.C2) != 0 {
 		c2a = make([]float64, nC2+1)
 		a2m1 = a2m1f(eps)
 		c2f(eps, c2a)
 		b21 = sinCosSeries(true, ssig1, csig1, c2a)
 	}
 
-	if (mask & capabilities.CapC3) != 0 {
+	if (mask & capabilities.C3) != 0 {
 		c3a = make([]float64, nC3)
 		g.c3f(eps, c3a)
 		a3c = -g.f * salp0 * g.a3f(eps)
 		b31 = sinCosSeries(true, ssig1, csig1, c3a)
 	}
 
-	if (mask & capabilities.CapC4) != 0 {
+	if (mask & capabilities.C4) != 0 {
 		c4a = make([]float64, nC4)
 		g.c4f(eps, c4a)
 		// Multiplier = a^2 * e^2 * cos(alpha0) * sin(alpha0)
@@ -160,8 +202,8 @@ func newLineImpl(g *geodesicImpl, lat1, lon1, azi1, salp1, calp1 float64, mask c
 		b31:          b31,
 		a4:           a4,
 		b41:          b41,
-		a13:          a13,
-		s13:          s13,
+		a13:          math.NaN(),
+		s13:          math.NaN(),
 		c1a:          c1a,
 		c1pa:         c1pa,
 		c2a:          c2a,
@@ -358,4 +400,26 @@ func (l *lineImpl) genPosition(arcMode bool, s12_a12 float64, mask capabilities.
 		S12 = l.c2*math.Atan2(salp12, calp12) + l.a4*(b42-l.b41)
 	}
 	return
+}
+
+// setDistance specifies the position of point 3 on the geodesic in terms of distance (meters). This
+// is only useful if the Line instance was created with capabilities.DistanceIn.
+func (l *lineImpl) setDistance(s13 float64) {
+	l.s13 = s13
+	l.a13 = l.PositionWithCapabilities(s13, capabilities.None).A12()
+}
+
+// setArc specifies the position of point 3 on the geodesic in terms of arc length (degrees). This
+// is only useful if the Line instance was created with capabilities.Distance.
+func (l *lineImpl) setArc(a13 float64) {
+	l.a13 = a13
+	l.s13 = l.ArcPositionWithCapabilities(a13, capabilities.Distance).S12()
+}
+
+func (l *lineImpl) Distance() float64 {
+	return l.s13
+}
+
+func (l *lineImpl) Arc() float64 {
+	return l.a13
 }
