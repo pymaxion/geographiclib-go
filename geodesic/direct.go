@@ -7,23 +7,16 @@ import (
 )
 
 type directSolver struct {
-	g *geodesicImpl
+	g *Geodesic
 }
 
-func (s *directSolver) direct(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) *dataImpl {
-	return s.genDirect(lat1, lon1, azi1, false, s12, mask)
+func (s *directSolver) direct(lat1, lon1, azi1, s12 float64, caps capabilities.Mask) Data {
+	caps |= capabilities.DistanceIn // automatically supply DistanceIn if necessary
+	line := newLine(s.g, lat1, lon1, azi1, math.NaN(), math.NaN(), caps)
+	return line.solvePosition(false, s12, caps)
 }
 
-func (s *directSolver) arcDirect(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) *dataImpl {
-	return s.genDirect(lat1, lon1, azi1, true, a12, mask)
-}
-
-//goland:noinspection GoSnakeCaseUsage
-func (s *directSolver) genDirect(lat1, lon1, azi1 float64, arcMode bool, s12_a12 float64, mask capabilities.BitMask) *dataImpl {
-	// Automatically supply DistanceIn if necessary
-	if !arcMode {
-		mask |= capabilities.DistanceIn
-	}
-	line := newLineImpl(s.g, lat1, lon1, azi1, math.NaN(), math.NaN(), mask)
-	return line.solvePosition(arcMode, s12_a12, mask)
+func (s *directSolver) arcDirect(lat1, lon1, azi1, a12 float64, caps capabilities.Mask) Data {
+	line := newLine(s.g, lat1, lon1, azi1, math.NaN(), math.NaN(), caps)
+	return line.solvePosition(true, a12, caps)
 }

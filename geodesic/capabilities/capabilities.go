@@ -1,28 +1,28 @@
 package capabilities
 
-// BitMask represents a set of geodesic calculations to perform as an integer bitmask.
+// Mask represents a set of geodesic calculations to perform as an integer bitmask.
 //
 // When used as an argument to Geodesic.DirectWithCapabilities and Geodesic.InverseWithCapabilities,
-// BitMask specifies which results to return in the GeodesicData struct.
+// Mask specifies which results to return in the GeodesicData struct.
 //
 // When used as an argument to NewGeodesicLineWithCapabilities and Geodesic.LineWithCapabilities,
-// BitMask specifies which capabilities should be included in the GeodesicLine struct.
-type BitMask int
+// Mask specifies which capabilities should be included in the GeodesicLine struct.
+type Mask int
 
 const (
-	none    BitMask = 0
-	C1      BitMask = 1 << 0
-	C1p     BitMask = 1 << 1
-	C2      BitMask = 1 << 2
-	C3      BitMask = 1 << 3
-	C4      BitMask = 1 << 4
-	all     BitMask = 0x1F
-	mask            = all
-	outAll  BitMask = 0x7F80
-	OutMask BitMask = 0xFF80 // Include LongUnroll
+	none    Mask = 0
+	C1      Mask = 1 << 0
+	C1p     Mask = 1 << 1
+	C2      Mask = 1 << 2
+	C3      Mask = 1 << 3
+	C4      Mask = 1 << 4
+	all     Mask = 0x1F
+	mask         = all
+	outAll  Mask = 0x7F80
+	OutMask Mask = 0xFF80 // Include LongUnroll
 
 	// None specifies: no capabilities, no output.
-	None BitMask = 0
+	None Mask = 0
 
 	// Latitude specifies: calculate latitude lat2. (It's not necessary to include this as a
 	// capability to GeodesicLine because this is included by default.)
@@ -54,9 +54,9 @@ const (
 	// Area specifies: calculate area S12.
 	Area = 1<<14 | C4
 
-	// All capabilities, calculate everything. (LongUnroll is not included in this mask.)
+	// All capabilities, calculate everything. (LongUnroll is not included in this caps.)
 	All = outAll | all
 
 	// LongUnroll specifies: unroll lon2.
-	LongUnroll BitMask = 1 << 15
+	LongUnroll Mask = 1 << 15
 )

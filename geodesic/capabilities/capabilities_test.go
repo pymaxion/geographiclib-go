@@ -9,7 +9,7 @@ import (
 func TestCapabilities(t *testing.T) {
 	testCases := []struct {
 		name          string
-		mask          BitMask
+		caps          Mask
 		expectedValue int
 	}{
 		{"None", None, 0},
@@ -28,7 +28,7 @@ func TestCapabilities(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.expectedValue, int(testCase.mask))
+			assert.Equal(t, testCase.expectedValue, int(testCase.caps))
 		})
 	}
 }

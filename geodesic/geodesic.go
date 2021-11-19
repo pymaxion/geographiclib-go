@@ -8,7 +8,7 @@ import (
 )
 
 /*
- Geodesic is an interface representing geodesic calculations.
+ Geodesic is a type representing geodesic calculations.
 
  The shortest path between two points on a ellipsoid at (lat1, lon1) and (lat2, lon2) is called the
  geodesic. Its length is s12 and the geodesic from point 1 to point 2 has azimuths azi1 and azi2 at
@@ -32,7 +32,7 @@ import (
  180° indicates that the geodesic is not a shortest path. In addition, the arc length between an
  equatorial crossing and the next extremum of latitude for a geodesic is 90°.
 
- This interface can also calculate several other quantities related to geodesics. These are:
+ This type can also calculate several other quantities related to geodesics. These are:
 
  Reduced length:
   If we fix the first point and increase azi1 by dazi1 (radians), the second point is displaced m12
@@ -63,22 +63,22 @@ import (
   M13 = M12 M23 - (1 - M12 M21) m23 / m12
   M31 = M32 M21 - (1 - M23 M32) m12 / m23
 
- The results of the geodesic calculations are bundled up into a Data object which includes the input
+ The results of the geodesic calculations are bundled up into a Data struct which includes the input
  parameters and all the computed results, i.e., lat1, lon1, azi1, lat2, lon2, azi2, s12, a12, m12
  (as M12Reduced), M12, M21, S12 (as S12Area).
 
  The functions DirectWithCapabilities, InverseWithCapabilities, and ArcDirectWithCapabilities
- include an optional final argument of type capabilities.BitMask to allow you to specify which
- results should be computed and returned. The default functions Direct, Inverse, and ArcDirect are
+ include an optional final argument of type capabilities.Mask to allow you to specify which results
+ should be computed and returned. The default functions Direct, Inverse, and ArcDirect are
  equivalent to calling DirectWithCapabilities, InverseWithCapabilities, and
  ArcDirectWithCapabilities with the capabilities.Standard argument, which will compute "standard"
- geodesic results (latitudes, longitudes, azimuths, and distance). A custom capabilities.BitMask
- argument can be bitor'ed out of a combination of other capabilities.BitMask values. For example, if
+ geodesic results (latitudes, longitudes, azimuths, and distance). A custom capabilities.Mask
+ argument can be bitor'ed out of a combination of other capabilities.Mask values. For example, if
  you wish to only compute the distance between two points, you would call, e.g.,
 
   geodesicData := WGS84.Inverse(lat1, lon1, lat2, lon2, capabilities.Distance)
 
- Additional functionality is provided by the geodesic.Line interface, which allows a sequence of
+ Additional functionality is provided by the geodesic.Line type, which allows a sequence of
  points along a geodesic to be computed. An instance of geodesic.Line can be created by calling
  Geodesic.Line.
 
@@ -104,10 +104,10 @@ import (
 
  The calculations are accurate to better than 15 nm (15 nanometers) for the WGS84 ellipsoid. See
  Sec. 9 of arXiv:1102.1215v1 (https://arxiv.org/abs/1102.1215v1) for details. The algorithms used by
- this interface are based on series expansions using the flattening f as a small parameter. These
- are only accurate for |f| < 0.02; however, reasonably accurate results will be obtained for |f| <
- 0.2. Here is a table of the approximate maximum error (expressed as a distance) for an ellipsoid
- with the same equatorial radius as the WGS84 ellipsoid and different values of the flattening.
+ this type are based on series expansions using the flattening f as a small parameter. These are
+ only accurate for |f| < 0.02; however, reasonably accurate results will be obtained for |f| < 0.2.
+ Here is a table of the approximate maximum error (expressed as a distance) for an ellipsoid with
+ the same equatorial radius as the WGS84 ellipsoid and different values of the flattening.
   |f|      error
   0.01     25 nm
   0.02     30 nm
@@ -120,35 +120,7 @@ import (
   Link: https://doi.org/10.1007/s00190-012-0578-z
   Addenda: https://geographiclib.sourceforge.io/geod-addenda.html
 */
-type Geodesic interface {
-	Direct(lat1, lon1, azi1, s12 float64) Data
-	DirectWithCapabilities(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) Data
-	ArcDirect(lat1, lon1, azi1, a12 float64) Data
-	ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Data
-	Inverse(lat1, lon1, lat2, lon2 float64) Data
-	InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Data
-
-	Line(lat1, lon1, azi1 float64) Line
-	LineWithCapabilities(lat1, lon1, azi1 float64, mask capabilities.BitMask) Line
-	DirectLine(lat1, lon1, azi1, s12 float64) Line
-	DirectLineWithCapabilities(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) Line
-	ArcDirectLine(lat1, lon1, azi1, a12 float64) Line
-	ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Line
-	InverseLine(lat1, lon1, lat2, lon2 float64) Line
-	InverseLineWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Line
-}
-
-// NewGeodesic creates a new instance of Geodesic with the given equatorial radius a (in meters) and
-// flattening of the ellipsoid f. Setting f = 0 gives a sphere; negative f gives a prolate
-// ellipsoid.
-//
-// This function will return an error if either a or (1-f) is not positive.
-func NewGeodesic(a, f float64) (Geodesic, error) {
-	return newGeodesicImpl(a, f)
-}
-
-// geodesicImpl is an unexported implementation of the Geodesic interface
-type geodesicImpl struct {
+type Geodesic struct {
 	a     float64
 	f     float64
 	f1    float64
@@ -161,9 +133,16 @@ type geodesicImpl struct {
 	a3x   []float64
 	c3x   []float64
 	c4x   []float64
+	ds    *directSolver
+	is    *inverseSolver
 }
 
-func newGeodesicImpl(a, f float64) (*geodesicImpl, error) {
+// NewGeodesic creates a new instance of Geodesic with the given equatorial radius a (in meters) and
+// flattening of the ellipsoid f. Setting f = 0 gives a sphere; negative f gives a prolate
+// ellipsoid.
+//
+// This function will return an error if either a or (1-f) is not positive.
+func NewGeodesic(a, f float64) (*Geodesic, error) {
 	if !(isfinite(a) && a > 0) {
 		return nil, errors.New("equatorial radius is not positive")
 	}
@@ -187,7 +166,8 @@ func newGeodesicImpl(a, f float64) (*geodesicImpl, error) {
 	a3x := initA3x(n)
 	c3x := initC3x(n)
 	c4x := initC4x(n)
-	return &geodesicImpl{
+
+	g := &Geodesic{
 		a:     a,
 		f:     f,
 		f1:    f1,
@@ -200,7 +180,11 @@ func newGeodesicImpl(a, f float64) (*geodesicImpl, error) {
 		a3x:   a3x,
 		c3x:   c3x,
 		c4x:   c4x,
-	}, nil
+	}
+	g.ds = &directSolver{g: g}
+	g.is = &inverseSolver{g}
+
+	return g, nil
 }
 
 func calculateAuthalicRadiusSquared(a, b, e2 float64) float64 {
@@ -221,12 +205,12 @@ func calculateAuthalicRadiusSquared(a, b, e2 float64) float64 {
 }
 
 // a3f evaluates A3
-func (g *geodesicImpl) a3f(eps float64) float64 {
+func (g *Geodesic) a3f(eps float64) float64 {
 	return polyval(nA3-1, g.a3x, 0, eps)
 }
 
 // c3f evaluates C3 coefficients and sets elements c[1] thru c[nC3 - 1]
-func (g *geodesicImpl) c3f(eps float64, c []float64) {
+func (g *Geodesic) c3f(eps float64, c []float64) {
 	mult := 1.
 	o := 0
 	for l := 1; l < nC3; l++ { // l is index of C3[l]
@@ -238,7 +222,7 @@ func (g *geodesicImpl) c3f(eps float64, c []float64) {
 }
 
 // c4f evaluates C4 coefficients and sets elements c[0] thru c[nC4 - 1]
-func (g *geodesicImpl) c4f(eps float64, c []float64) {
+func (g *Geodesic) c4f(eps float64, c []float64) {
 	mult := 1.
 	o := 0
 	for l := 0; l < nC4; l++ { // l is index of C4[l]
@@ -247,6 +231,18 @@ func (g *geodesicImpl) c4f(eps float64, c []float64) {
 		o += m + 1
 		mult *= eps
 	}
+}
+
+func (g *Geodesic) EquatorialRadius() float64 {
+	return g.a
+}
+
+func (g *Geodesic) Flattening() float64 {
+	return g.f
+}
+
+func (g *Geodesic) EllipsoidArea() float64 {
+	return 4 * math.Pi * g.c2
 }
 
 /*
@@ -267,20 +263,20 @@ func (g *geodesicImpl) c4f(eps float64, c []float64) {
 
  This function is equivalent to calling DirectWithCapabilities with capabilities.Standard.
 */
-func (g *geodesicImpl) Direct(lat1, lon1, azi1, s12 float64) Data {
+func (g *Geodesic) Direct(lat1, lon1, azi1, s12 float64) Data {
 	return g.DirectWithCapabilities(lat1, lon1, azi1, s12, capabilities.Standard)
 }
 
 /*
  DirectWithCapabilities solves the direct geodesic problem where the length of the geodesic is
  specified in terms of distance. It also allows you to specify which results should be computed and
- returned via the capabilities.BitMask argument.
+ returned via the capabilities.Mask argument.
 
  See Direct for more details.
 */
-func (g *geodesicImpl) DirectWithCapabilities(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) Data {
-	solver := directSolver{g}
-	return solver.direct(lat1, lon1, azi1, s12, mask)
+func (g *Geodesic) DirectWithCapabilities(lat1, lon1, azi1, s12 float64, caps capabilities.Mask) Data {
+	solver := g.ds
+	return solver.direct(lat1, lon1, azi1, s12, caps)
 }
 
 /*
@@ -301,20 +297,20 @@ func (g *geodesicImpl) DirectWithCapabilities(lat1, lon1, azi1, s12 float64, mas
 
  This function is equivalent to calling ArcDirectWithCapabilities with capabilities.Standard.
 */
-func (g *geodesicImpl) ArcDirect(lat1, lon1, azi1, a12 float64) Data {
+func (g *Geodesic) ArcDirect(lat1, lon1, azi1, a12 float64) Data {
 	return g.ArcDirectWithCapabilities(lat1, lon1, azi1, a12, capabilities.Standard)
 }
 
 /*
  ArcDirectWithCapabilities solves the direct geodesic problem where the length of the geodesic is
  specified in terms of arc length. It also allows you to specify which results should be computed
- and returned via the capabilities.BitMask argument.
+ and returned via the capabilities.Mask argument.
 
  See ArcDirect for more details.
 */
-func (g *geodesicImpl) ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Data {
-	solver := directSolver{g}
-	return solver.arcDirect(lat1, lon1, azi1, a12, mask)
+func (g *Geodesic) ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, caps capabilities.Mask) Data {
+	solver := g.ds
+	return solver.arcDirect(lat1, lon1, azi1, a12, caps)
 }
 
 /*
@@ -336,19 +332,19 @@ func (g *geodesicImpl) ArcDirectWithCapabilities(lat1, lon1, azi1, a12 float64, 
 
  This function is equivalent to calling InverseWithCapabilities with capabilities.Standard.
 */
-func (g *geodesicImpl) Inverse(lat1, lon1, lat2, lon2 float64) Data {
+func (g *Geodesic) Inverse(lat1, lon1, lat2, lon2 float64) Data {
 	return g.InverseWithCapabilities(lat1, lon1, lat2, lon2, capabilities.Standard)
 }
 
 /*
  InverseWithCapabilities solves the inverse geodesic problem. It also allows you to specify which
- results should be computed and returned via the capabilities.BitMask argument.
+ results should be computed and returned via the capabilities.Mask argument.
 
  See Inverse for more details.
 */
-func (g *geodesicImpl) InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Data {
-	solver := inverseSolver{g}
-	return solver.inverse(lat1, lon1, lat2, lon2, mask)
+func (g *Geodesic) InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, caps capabilities.Mask) Data {
+	solver := g.is
+	return solver.inverse(lat1, lon1, lat2, lon2, caps)
 }
 
 /*
@@ -364,57 +360,61 @@ func (g *geodesicImpl) InverseWithCapabilities(lat1, lon1, lat2, lon2 float64, m
 
  This function is equivalent to calling LineWithCapabilities with capabilities.All.
 */
-func (g *geodesicImpl) Line(lat1, lon1, azi1 float64) Line {
+func (g *Geodesic) Line(lat1, lon1, azi1 float64) *Line {
 	return g.LineWithCapabilities(lat1, lon1, azi1, capabilities.All)
 }
 
 /*
  LineWithCapabilities returns an instance of geodesic.Line to allow computation of several points on
  a single geodesic. It also allows you to specify which results should be computed and returned via
- the capabilities.BitMask argument.
+ the capabilities.Mask argument.
 
  See Line for more details.
 */
-func (g *geodesicImpl) LineWithCapabilities(lat1, lon1, azi1 float64, mask capabilities.BitMask) Line {
-	return newLineImpl(g, lat1, lon1, azi1, math.NaN(), math.NaN(), mask)
+func (g *Geodesic) LineWithCapabilities(lat1, lon1, azi1 float64, caps capabilities.Mask) *Line {
+	return newLine(g, lat1, lon1, azi1, math.NaN(), math.NaN(), caps)
 }
 
-func (g *geodesicImpl) DirectLine(lat1, lon1, azi1, s12 float64) Line {
+func (g *Geodesic) DirectLine(lat1, lon1, azi1, s12 float64) *Line {
 	return g.DirectLineWithCapabilities(lat1, lon1, azi1, s12, capabilities.All)
 }
 
-func (g *geodesicImpl) DirectLineWithCapabilities(lat1, lon1, azi1, s12 float64, mask capabilities.BitMask) Line {
+func (g *Geodesic) DirectLineWithCapabilities(lat1, lon1, azi1, s12 float64, caps capabilities.Mask) *Line {
 	azi1 = angNormalize(azi1)
 	salp1, calp1 := sincosd(angRound(azi1))
-	l := newLineImpl(g, lat1, lon1, azi1, salp1, calp1, mask|capabilities.DistanceIn)
-	l.setDistance(s12)
+
+	l := newLine(g, lat1, lon1, azi1, salp1, calp1, caps|capabilities.DistanceIn)
+	l.SetDistance(s12)
 	return l
 }
 
-func (g *geodesicImpl) ArcDirectLine(lat1, lon1, azi1, a12 float64) Line {
+func (g *Geodesic) ArcDirectLine(lat1, lon1, azi1, a12 float64) *Line {
 	return g.ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12, capabilities.All)
 }
 
-func (g *geodesicImpl) ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12 float64, mask capabilities.BitMask) Line {
+func (g *Geodesic) ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12 float64, caps capabilities.Mask) *Line {
 	azi1 = angNormalize(azi1)
 	salp1, calp1 := sincosd(angRound(azi1))
-	l := newLineImpl(g, lat1, lon1, azi1, salp1, calp1, mask)
-	l.setArc(a12)
+
+	l := newLine(g, lat1, lon1, azi1, salp1, calp1, caps)
+	l.SetArc(a12)
 	return l
 }
 
-func (g *geodesicImpl) InverseLine(lat1, lon1, lat2, lon2 float64) Line {
+func (g *Geodesic) InverseLine(lat1, lon1, lat2, lon2 float64) *Line {
 	return g.InverseLineWithCapabilities(lat1, lon1, lat2, lon2, capabilities.All)
 }
 
-func (g *geodesicImpl) InverseLineWithCapabilities(lat1, lon1, lat2, lon2 float64, mask capabilities.BitMask) Line {
-	solver := inverseSolver{g}
-	_, _, _, _, a12, _, salp1, calp1, _, _, _, _, _, _ := solver.genInverse(lat1, lon1, lat2, lon2, mask)
-	azi1 := atan2d(salp1, calp1)
-	if (mask & (capabilities.OutMask & capabilities.DistanceIn)) != 0 {
-		mask |= capabilities.Distance
+func (g *Geodesic) InverseLineWithCapabilities(lat1, lon1, lat2, lon2 float64, caps capabilities.Mask) *Line {
+	solver := g.is
+	ir := solver.genInverse(lat1, lon1, lat2, lon2, caps)
+
+	azi1 := atan2d(ir.salp1, ir.calp1)
+	if (caps & (capabilities.OutMask & capabilities.DistanceIn)) != 0 {
+		caps |= capabilities.Distance
 	}
-	l := newLineImpl(g, lat1, lon1, azi1, salp1, calp1, mask)
-	l.setArc(a12)
+
+	l := newLine(g, lat1, lon1, azi1, ir.salp1, ir.calp1, caps)
+	l.SetArc(ir.A12)
 	return l
 }
