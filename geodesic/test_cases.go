@@ -645,3 +645,270 @@ var (
 		},
 	}
 )
+
+type planimeterTest struct {
+	testNum     int
+	description string
+	logic       func(t *testing.T)
+}
+
+func (p *planimeterTest) String() string {
+	if p.description == "" {
+		return fmt.Sprintf("Planimeter%d", p.testNum)
+	}
+	return fmt.Sprintf("Planimeter%d   %s", p.testNum, p.description)
+}
+
+func planimeter(points [][]float64) PolygonResult {
+	polygon := newPolygonArea(WGS84, false)
+	for i := 0; i < len(points); i++ {
+		polygon.AddPoint(points[i][0], points[i][1])
+	}
+	return polygon.Compute(false, true)
+}
+
+func polyLength(points [][]float64) PolygonResult {
+	polyline := newPolygonArea(WGS84, true)
+	for i := 0; i < len(points); i++ {
+		polyline.AddPoint(points[i][0], points[i][1])
+	}
+	return polyline.Compute(false, true)
+}
+
+var (
+	planimeter0 = planimeterTest{
+		testNum:     0,
+		description: "Check fix for pole-encircling bug found 2011-03-16",
+		logic: func(t *testing.T) {
+			pa := [][]float64{{89, 0}, {89, 90}, {89, 180}, {89, 270}}
+			a := planimeter(pa)
+			assert.InDelta(t, 631819.8745, a.perimeter, 1e-4)
+			assert.InDelta(t, 24952305678.0, a.area, 1)
+
+			pb := [][]float64{{-89, 0}, {-89, 90}, {-89, 180}, {-89, 270}}
+			a = planimeter(pb)
+			assert.InDelta(t, 631819.8745, a.perimeter, 1e-4)
+			assert.InDelta(t, -24952305678.0, a.area, 1)
+
+			pc := [][]float64{{0, -1}, {-1, 0}, {0, 1}, {1, 0}}
+			a = planimeter(pc)
+			assert.InDelta(t, 627598.2731, a.perimeter, 1e-4)
+			assert.InDelta(t, 24619419146.0, a.area, 1)
+
+			pd := [][]float64{{90, 0}, {0, 0}, {0, 90}}
+			a = planimeter(pd)
+			assert.InDelta(t, 30022685, a.perimeter, 1)
+			assert.InDelta(t, 63758202715511.0, a.area, 1)
+
+			a = polyLength(pd)
+			assert.InDelta(t, 20020719, a.perimeter, 1)
+			assert.True(t, math.IsNaN(a.area))
+		},
+	}
+
+	planimeter5 = planimeterTest{
+		testNum:     5,
+		description: "Check fix for planimeter pole crossing bug found 2011-06-24",
+		logic: func(t *testing.T) {
+			points := [][]float64{{89, 0.1}, {89, 90.1}, {89, -179.9}}
+			a := planimeter(points)
+			assert.InDelta(t, 539297, a.perimeter, 1)
+			assert.InDelta(t, 12476152838.5, a.area, 1)
+		},
+	}
+
+	planimeter6 = planimeterTest{
+		testNum:     6,
+		description: "Check fix for Planimeter lon12 rounding bug found 2012-12-03",
+		logic: func(t *testing.T) {
+			pa := [][]float64{{9, -0.00000000000001}, {9, 180}, {9, 0}}
+			a := planimeter(pa)
+			assert.InDelta(t, 36026861, a.perimeter, 1)
+			assert.InDelta(t, 0, a.area, 1)
+
+			pb := [][]float64{{9, 0.00000000000001}, {9, 0}, {9, 180}}
+			a = planimeter(pb)
+			assert.InDelta(t, 36026861, a.perimeter, 1)
+			assert.InDelta(t, 0, a.area, 1)
+
+			pc := [][]float64{{9, 0.00000000000001}, {9, 180}, {9, 0}}
+			a = planimeter(pc)
+			assert.InDelta(t, 36026861, a.perimeter, 1)
+			assert.InDelta(t, 0, a.area, 1)
+
+			pd := [][]float64{{9, -0.00000000000001}, {9, 0}, {9, 180}}
+			a = planimeter(pd)
+			assert.InDelta(t, 36026861, a.perimeter, 1)
+			assert.InDelta(t, 0, a.area, 1)
+		},
+	}
+
+	planimeter12 = planimeterTest{
+		testNum:     12,
+		description: "Area of arctic circle (not really -- adjunct to rhumb-area test)",
+		logic: func(t *testing.T) {
+			points := [][]float64{{66.562222222, 0}, {66.562222222, 180}}
+			a := planimeter(points)
+			assert.InDelta(t, 10465729, a.perimeter, 1)
+			assert.InDelta(t, 0, a.area, 1)
+		},
+	}
+
+	planimeter13 = planimeterTest{
+		testNum:     13,
+		description: "Check encircling pole twice",
+		logic: func(t *testing.T) {
+			points := [][]float64{{89, -360}, {89, -240}, {89, -120}, {89, 0}, {89, 120}, {89, 240}}
+			a := planimeter(points)
+			assert.InDelta(t, 1160741, a.perimeter, 1)
+			assert.InDelta(t, 32415230256.0, a.area, 1)
+		},
+	}
+
+	planimeter15 = planimeterTest{
+		testNum:     15,
+		description: "Coverage tests, includes Planimeter15 - Planimeter18 (combinations of reverse and sign) + calls to testpoint, testedge.",
+		logic: func(t *testing.T) {
+			lat := []float64{2, 1, 3}
+			lon := []float64{1, 2, 3}
+			r := 18454562325.45119
+			a0 := 510065621724088.5093 // ellipsoid area
+
+			polygon := newPolygonArea(WGS84, false)
+			polygon.AddPoint(lat[0], lon[0])
+			polygon.AddPoint(lat[1], lon[1])
+
+			a := polygon.TestPoint(lat[2], lon[2], false, true)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.TestPoint(lat[2], lon[2], false, false)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.TestPoint(lat[2], lon[2], true, true)
+			assert.InDelta(t, -r, a.area, 0.5)
+			a = polygon.TestPoint(lat[2], lon[2], true, false)
+			assert.InDelta(t, a0-r, a.area, 0.5)
+
+			inv := WGS84.Inverse(lat[1], lon[1], lat[2], lon[2])
+
+			a = polygon.TestEdge(inv.Azi1, inv.S12, false, true)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.TestEdge(inv.Azi1, inv.S12, false, false)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.TestEdge(inv.Azi1, inv.S12, true, true)
+			assert.InDelta(t, -r, a.area, 0.5)
+			a = polygon.TestEdge(inv.Azi1, inv.S12, true, false)
+			assert.InDelta(t, a0-r, a.area, 0.5)
+
+			polygon.AddPoint(lat[2], lon[2])
+
+			a = polygon.Compute(false, true)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.Compute(false, false)
+			assert.InDelta(t, r, a.area, 0.5)
+			a = polygon.Compute(true, true)
+			assert.InDelta(t, -r, a.area, 0.5)
+			a = polygon.Compute(true, false)
+			assert.InDelta(t, a0-r, a.area, 0.5)
+		},
+	}
+
+	planimeter19 = planimeterTest{
+		testNum:     19,
+		description: "Coverage tests, includes Planimeter19 - Planimeter20 (degenerate polygons) + extra cases.",
+		logic: func(t *testing.T) {
+			polygon := newPolygonArea(WGS84, false)
+			a := polygon.Compute(false, true)
+			assert.True(t, a.area == 0)
+			assert.True(t, a.perimeter == 0)
+			a = polygon.TestPoint(1, 1, false, true)
+			assert.True(t, a.area == 0)
+			assert.True(t, a.perimeter == 0)
+			a = polygon.TestEdge(90, 1000, false, true)
+			assert.True(t, math.IsNaN(a.area))
+			assert.True(t, math.IsNaN(a.perimeter))
+			polygon.AddPoint(1, 1)
+			a = polygon.Compute(false, true)
+			assert.True(t, a.area == 0)
+			assert.True(t, a.perimeter == 0)
+
+			polyline := newPolygonArea(WGS84, true)
+			a = polyline.Compute(false, true)
+			assert.True(t, a.perimeter == 0)
+			a = polyline.TestPoint(1, 1, false, true)
+			assert.True(t, a.perimeter == 0)
+			a = polyline.TestEdge(90, 1000, false, true)
+			assert.True(t, math.IsNaN(a.perimeter))
+			polyline.AddPoint(1, 1)
+			a = polyline.Compute(false, true)
+			assert.True(t, a.perimeter == 0)
+			polygon.AddPoint(1, 1)
+			a = polyline.TestEdge(90, 1000, false, true)
+			assert.InDelta(t, 1000, a.perimeter, 1e-10)
+			a = polyline.TestPoint(2, 2, false, true)
+			assert.InDelta(t, 156876.149, a.perimeter, 0.5e-3)
+		},
+	}
+
+	planimeter21 = planimeterTest{
+		testNum:     21,
+		description: "Some test to add code coverage: multiple circlings of pole (includes Planimeter21 - Planimeter28) + invocations via testpoint and testedge.",
+		logic: func(t *testing.T) {
+			lat := 45.
+			azi := 39.2144607176828184218
+			s := 8420705.40957178156285
+			r := 39433884866571.4277   // Area for one circuit
+			a0 := 510065621724088.5093 // Ellipsoid area
+			polygon := newPolygonArea(WGS84, false)
+			polygon.AddPoint(lat, 60)
+			polygon.AddPoint(lat, 180)
+			polygon.AddPoint(lat, -60)
+			polygon.AddPoint(lat, 60)
+			polygon.AddPoint(lat, 180)
+			polygon.AddPoint(lat, -60)
+
+			for i := 3.; i <= 4.; i++ {
+				polygon.AddPoint(lat, 60)
+				polygon.AddPoint(lat, 180)
+				a := polygon.TestPoint(lat, -60, false, true)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.TestPoint(lat, -60, false, false)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.TestPoint(lat, -60, true, true)
+				assert.InDelta(t, -i*r, a.area, 0.5)
+				a = polygon.TestPoint(lat, -60, true, false)
+				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+				a = polygon.TestEdge(azi, s, false, true)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.TestEdge(azi, s, false, false)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.TestEdge(azi, s, true, true)
+				assert.InDelta(t, -i*r, a.area, 0.5)
+				a = polygon.TestEdge(azi, s, true, false)
+				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+				polygon.AddPoint(lat, -60)
+				a = polygon.Compute(false, true)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.Compute(false, false)
+				assert.InDelta(t, i*r, a.area, 0.5)
+				a = polygon.Compute(true, true)
+				assert.InDelta(t, -i*r, a.area, 0.5)
+				a = polygon.Compute(true, false)
+				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+			}
+		},
+	}
+
+	planimeter29 = planimeterTest{
+		testNum:     29,
+		description: "Check fix to transitdirect vs transit zero handling inconsistency",
+		logic: func(t *testing.T) {
+			polygon := newPolygonArea(WGS84, false)
+			polygon.AddPoint(0, 0)
+			polygon.AddEdge(90, 1000)
+			polygon.AddEdge(0, 1000)
+			polygon.AddEdge(-90, 1000)
+			a := polygon.Compute(false, true)
+			// The area should be 1e6. Prior to the fix it was 1e6 - A/2, where A = ellipsoid area.
+			assert.InDelta(t, 1000000.0, a.area, 0.01)
+		},
+	}
+)

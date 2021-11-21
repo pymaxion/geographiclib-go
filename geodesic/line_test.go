@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestPosition(t *testing.T) {
+func TestLine(t *testing.T) {
 	for _, testCase := range []geodSolve{
 		geodSolve17,
 		geodSolve61,
