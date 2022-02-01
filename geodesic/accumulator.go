@@ -11,7 +11,7 @@ package geodesic
 // (https://doi.org/10.1007/PL00009321), Discrete & Computational Geometry 18(3)
 // 305-363 (1997).
 //
-// In the documentation of the struct's methods, sum stands for the value
+// In the documentation of the struct's functions, sum stands for the value
 // currently held in the accumulator.
 type accumulator struct {
 	s float64

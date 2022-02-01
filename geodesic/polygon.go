@@ -128,6 +128,8 @@ func (p *PolygonArea) CurrentPoint() (float64, float64) {
 	return p.lat1, p.lon1
 }
 
+// PolygonResult is a container struct for results from geodesic polygon
+// perimeter/area calculations.
 type PolygonResult struct {
 	// Num is the number of vertices in the polygon or polyline
 	Num int
@@ -140,8 +142,15 @@ type PolygonResult struct {
 }
 
 /*
- Compute returns the results of the polygon area/perimeter calculation so far. If
- reverse is true, then clockwise tra
+ Compute returns the results of the polygon area/perimeter calculation so far.
+
+  reverse: if true, then clockwise (instead of counter-clockwise) traversal counts
+    as a positive area.
+  sign: if true, then return a signed result for the area if the polygon is
+    traversed in the "wrong" direction instead of returning the area for the rest of
+    the earth.
+
+ More points can be added to the polygon after this call.
 */
 func (p *PolygonArea) Compute(reverse, sign bool) PolygonResult {
 	if p.num < 2 {
@@ -159,6 +168,21 @@ func (p *PolygonArea) Compute(reverse, sign bool) PolygonResult {
 	return PolygonResult{p.num, p.perimeterSum.sumWith(inv.S12), area}
 }
 
+/*
+ TestPoint returns the polygon perimeter/area results assuming a tentative final
+ test point is added; however, the data for the test point is not saved. This
+ lets you report a running result for the perimeter and area as the user moves
+ the mouse cursor. Ordinary floating point arithmetic is used to accumulate the
+ data for the test point; thus the area and perimeter returned are less accurate
+ than if AddPoint and Compute are used.
+
+  lat: the latitude of the test point (degrees). Should be in the range [-90°, 90°].
+  lon: the longitude of the test point (degrees).
+  reverse: if true then clockwise (instead of counter-clockwise) traversal counts as
+    a positive area.
+  sign: if true then return a signed result for the area if the polygon is traversed
+    in the "wrong" direction instead of returning the area for the rest of the earth.
+*/
 func (p *PolygonArea) TestPoint(lat, lon float64, reverse, sign bool) PolygonResult {
 	if p.num == 0 {
 		return PolygonResult{1, 0, ternary(p.polyline, math.NaN(), 0)}
@@ -194,6 +218,21 @@ func (p *PolygonArea) TestPoint(lat, lon float64, reverse, sign bool) PolygonRes
 	return PolygonResult{num, perimeter, area}
 }
 
+/*
+ TestEdge returns the polygon perimeter/area results assuming a tentative final
+ test point is added via an azimuth and distance; however, the data for the test
+ point is not saved. This lets you report a running result for the perimeter and
+ area as the user moves the mouse cursor. Ordinary floating point arithmetic is
+ used to accumulate the data for the test point; thus the area and perimeter
+ returned are less accurate than if AddPoint and Compute are used.
+
+  azi: azimuth at current point (degrees).
+  s: distance from current point to final test point (meters).
+  reverse: if true then clockwise (instead of counter-clockwise) traversal counts as
+    a positive area.
+  sign: if true then return a signed result for the area if the polygon is traversed
+    in the "wrong" direction instead of returning the area for the rest of the earth.
+*/
 func (p *PolygonArea) TestEdge(azi, s float64, reverse, sign bool) PolygonResult {
 	if p.num == 0 { // we don't have a starting point!
 		return PolygonResult{0, math.NaN(), math.NaN()}

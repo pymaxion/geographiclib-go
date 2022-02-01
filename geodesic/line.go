@@ -8,8 +8,8 @@ import (
 
 /*
  Line represents a geodesic line and facilitates the determination of a series of
- points on a single geodesic. Geodesic.Line method should be used to create an
- instance of Line.
+ points on a single geodesic. The Geodesic.Line function should be used to create
+ an instance of Line.
 
  Position returns the location of point 2 a distance s12 along the geodesic.
  Alternatively, ArcPosition gives the position of point 2 an arc length a12 along
