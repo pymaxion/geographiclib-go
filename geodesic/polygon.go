@@ -6,6 +6,24 @@ import (
 	"geographiclib-go/geodesic/capabilities"
 )
 
+/*
+ PolygonArea is a type representing geodesic polygon area and perimeter calculations on an
+ ellipsoid. The area of a geodesic polygon is calculated using the method given in Section 6 of:
+
+  C. F. F. Karney, Algorithms for geodesics, J. Geodesy 87, 43-55 (2013)
+  Link: https://doi.org/10.1007/s00190-012-0578-z
+  Addenda: https://geographiclib.sourceforge.io/geod-addenda.html
+
+ Arbitrarily complex polygons are allowed. In the case of self-intersecting polygons, the area is
+ accumulated "algebraically", e.g., the areas of the 2 loops in a figure-8 polygon will partially
+ cancel.
+
+ This type lets you add vertices one at a time to the polygon. The area and perimeter are
+ accumulated at two times the standard floating point precision to guard against the loss of
+ accuracy with many-sided polygons. At any point you can ask for the perimeter and area so far.
+ There's also an option to treat the points as defining a polyline instead of a polygon; in that
+ case, only the perimeter is computed.
+*/
 type PolygonArea struct {
 	g            *Geodesic
 	polyline     bool
@@ -21,7 +39,9 @@ type PolygonArea struct {
 	lon1         float64
 }
 
-func newPolygonArea(g *Geodesic, polyline bool) *PolygonArea {
+// NewPolygonArea creates a new instance of PolygonArea with the given Geodesic. If polyline is set to
+// true, added points will be interpreted as defining a polyline instead of a polygon.
+func NewPolygonArea(g *Geodesic, polyline bool) *PolygonArea {
 	area0 := g.EllipsoidArea()
 	caps := capabilities.Latitude | capabilities.Longitude | capabilities.Distance
 	if !polyline {
@@ -46,6 +66,7 @@ func newPolygonArea(g *Geodesic, polyline bool) *PolygonArea {
 	return p
 }
 
+// Clear resets the PolygonArea instance, allowing a new polygon to be started.
 func (p *PolygonArea) Clear() {
 	p.num = 0
 	p.crossings = 0
@@ -56,6 +77,8 @@ func (p *PolygonArea) Clear() {
 	p.lat0, p.lon0, p.lat1, p.lon1 = math.NaN(), math.NaN(), math.NaN(), math.NaN()
 }
 
+// AddPoint adds a point to the polygon or polyline represented by the PolygonArea instance. Note
+// that lat should be in the range [-90°, 90°].
 func (p *PolygonArea) AddPoint(lat, lon float64) {
 	lon = angNormalize(lon)
 	if p.num == 0 {
@@ -73,6 +96,15 @@ func (p *PolygonArea) AddPoint(lat, lon float64) {
 	p.num++
 }
 
+/*
+ AddEdge adds an edge to the polygon or polyline represented by the PolygonArea instance.
+
+  azi: azimuth at current point (degrees).
+  s: distance from current point to next point (meters).
+
+ This function does nothing if no points have been added yet. Use CurrentPoint to determine the
+ position of the newest vertex.
+*/
 func (p *PolygonArea) AddEdge(azi, s float64) {
 	if p.num > 0 { // Do nothing if p.num is zero
 		dir := p.g.DirectWithCapabilities(p.lat1, p.lon1, azi, s, p.caps)
@@ -86,12 +118,26 @@ func (p *PolygonArea) AddEdge(azi, s float64) {
 	}
 }
 
-type PolygonResult struct {
-	num       int
-	perimeter float64
-	area      float64
+// CurrentPoint reports the previous (lat, lon) vertex added to the polygon or polyline. If no points have been
+// added, math.NaN is returned instead.
+func (p *PolygonArea) CurrentPoint() (float64, float64) {
+	return p.lat1, p.lon1
 }
 
+type PolygonResult struct {
+	// Num is the number of vertices in the polygon or polyline
+	Num int
+
+	// Perimeter is the perimeter of the polygon or the length of the polyline (meters)
+	Perimeter float64
+
+	// Area is the area of the polygon (meters²)
+	Area float64
+}
+
+/*
+ Compute returns the results of the polygon area/perimeter calculation so far. If reverse is true, then clockwise tra
+*/
 func (p *PolygonArea) Compute(reverse, sign bool) PolygonResult {
 	if p.num < 2 {
 		return PolygonResult{p.num, 0, ternary(p.polyline, math.NaN(), 0)}

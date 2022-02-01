@@ -519,7 +519,7 @@ func a2m1f(eps float64) float64 {
 	return (t - eps) / (1 + eps)
 }
 
-// The coefficients C2[l] in the Fourier expansion of B2
+// c2f calculates the coefficients C2[l] in the Fourier expansion of B2
 func c2f(eps float64, c []float64) {
 	coeff := []float64{
 		// C2[1]/eps^1, polynomial in eps2 of order 2

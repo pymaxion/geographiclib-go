@@ -137,11 +137,12 @@ type Geodesic struct {
 	is    *inverseSolver
 }
 
-// NewGeodesic creates a new instance of Geodesic with the given equatorial radius a (in meters) and
-// flattening of the ellipsoid f. Setting f = 0 gives a sphere; negative f gives a prolate
-// ellipsoid.
-//
-// This function will return an error if either a or (1-f) is not positive.
+/*
+ NewGeodesic creates a new instance of Geodesic with the given equatorial radius a (in meters) and
+ flattening of the ellipsoid f. Setting f = 0 gives a sphere; negative f gives a prolate ellipsoid.
+
+ This function will return an error if either a or (1-f) is not positive.
+*/
 func NewGeodesic(a, f float64) (*Geodesic, error) {
 	if !(isfinite(a) && a > 0) {
 		return nil, errors.New("equatorial radius is not positive")
@@ -233,14 +234,21 @@ func (g *Geodesic) c4f(eps float64, c []float64) {
 	}
 }
 
+// EquatorialRadius returns the equatorial radius of the ellipsoid in meters. This is the value used
+// to create the Geodesic instance.
 func (g *Geodesic) EquatorialRadius() float64 {
 	return g.a
 }
 
+// Flattening returns the flattening of the ellipsoid. This is the value used to create the Geodesic
+// instance.
 func (g *Geodesic) Flattening() float64 {
 	return g.f
 }
 
+// EllipsoidArea returns the total area of the ellipsoid in meters². The area of a polygon
+// encircling a pole can be found by adding EllipsoidArea()/2 to the sum of S12Area for each side of
+// the polygon.
 func (g *Geodesic) EllipsoidArea() float64 {
 	return 4 * math.Pi * g.c2
 }
@@ -375,10 +383,30 @@ func (g *Geodesic) LineWithCapabilities(lat1, lon1, azi1 float64, caps capabilit
 	return newLine(g, lat1, lon1, azi1, math.NaN(), math.NaN(), caps)
 }
 
+/*
+ DirectLine returns an instance of geodesic.Line defined in terms of the direct geodesic problem and
+ specified in terms of distance. The function sets point 3 of the returned geodesic.Line to
+ correspond to point 2 of the direct geodesic problem.
+
+  lat1: latitude of point 1 (degrees). Should be in the range [-90°, 90°].
+  lon1: longitude of point 1 (degrees).
+  azi1: azimuth at point 1 (degrees).
+  s12: distance between point 1 and point 2 (meters); it can be negative.
+
+ This function is equivalent to calling DirectLineWithCapabilities with capabilities.All.
+*/
 func (g *Geodesic) DirectLine(lat1, lon1, azi1, s12 float64) *Line {
 	return g.DirectLineWithCapabilities(lat1, lon1, azi1, s12, capabilities.All)
 }
 
+/*
+ DirectLineWithCapabilities returns an instance of geodesic.Line defined in terms of the direct
+ geodesic problem and specified in terms of distance. The function sets point 3 of the returned
+ geodesic.Line to correspond to point 2 of the direct geodesic problem. It also allows you to
+ specify which results should be computed and returned via the capabilities.Mask argument.
+
+ See DirectLine for more details.
+*/
 func (g *Geodesic) DirectLineWithCapabilities(lat1, lon1, azi1, s12 float64, caps capabilities.Mask) *Line {
 	azi1 = angNormalize(azi1)
 	salp1, calp1 := sincosd(angRound(azi1))
@@ -388,10 +416,30 @@ func (g *Geodesic) DirectLineWithCapabilities(lat1, lon1, azi1, s12 float64, cap
 	return l
 }
 
+/*
+ ArcDirectLine returns an instance of geodesic.Line defined in terms of the direct geodesic problem
+ and specified in terms of arc length. The function sets point 3 of the returned geodesic.Line to
+ correspond to point 2 of the direct geodesic problem.
+
+  lat1: latitude of point 1 (degrees). Should be in the range [-90°, 90°].
+  lon1: longitude of point 1 (degrees).
+  azi1: azimuth at point 1 (degrees).
+  a12: arc length between point 1 and point 2 (degrees); it can be negative.
+
+ This function is equivalent to calling ArcDirectLineWithCapabilities with capabilities.All.
+*/
 func (g *Geodesic) ArcDirectLine(lat1, lon1, azi1, a12 float64) *Line {
 	return g.ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12, capabilities.All)
 }
 
+/*
+ ArcDirectLineWithCapabilities returns an instance of geodesic.Line defined in terms of the direct
+ geodesic problem and specified in terms of arc length. The function sets point 3 of the returned
+ geodesic.Line to correspond to point 2 of the direct geodesic problem. It also allows you to
+ specify which results should be computed and returned via the capabilities.Mask argument.
+
+ See ArcDirectLine for more details.
+*/
 func (g *Geodesic) ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12 float64, caps capabilities.Mask) *Line {
 	azi1 = angNormalize(azi1)
 	salp1, calp1 := sincosd(angRound(azi1))
@@ -401,10 +449,29 @@ func (g *Geodesic) ArcDirectLineWithCapabilities(lat1, lon1, azi1, a12 float64, 
 	return l
 }
 
+/*
+ InverseLine an instance of geodesic.Line defined in terms of the inverse geodesic problem. This
+ function sets point 3 of the GeodesicLine to correspond to point 2 of the inverse geodesic problem.
+
+  lat1: latitude of point 1 (degrees). Should be in the range [-90°, 90°].
+  lon1: longitude of point 1 (degrees).
+  lat2: latitude of point 2 (degrees). Should be in the range [-90°, 90°].
+  lon2: longitude of point 2 (degrees).
+
+ This function is equivalent to calling InverseLineWithCapabilities with capabilities.All.
+*/
 func (g *Geodesic) InverseLine(lat1, lon1, lat2, lon2 float64) *Line {
 	return g.InverseLineWithCapabilities(lat1, lon1, lat2, lon2, capabilities.All)
 }
 
+/*
+ InverseLineWithCapabilities an instance of geodesic.Line defined in terms of the inverse geodesic
+ problem. This function sets point 3 of the GeodesicLine to correspond to point 2 of the inverse
+ geodesic problem. It also allows you to specify which results should be computed and returned via
+ the capabilities.Mask argument.
+
+ See InverseLineWithCapabilities for more details.
+*/
 func (g *Geodesic) InverseLineWithCapabilities(lat1, lon1, lat2, lon2 float64, caps capabilities.Mask) *Line {
 	solver := g.is
 	ir := solver.genInverse(lat1, lon1, lat2, lon2, caps)

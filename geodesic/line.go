@@ -191,55 +191,122 @@ func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilit
 	}
 }
 
+/*
+ Position computes the position of point 2 which is a distance s12 (meters) from point 1. The values
+ of lon2 and azi2 returned are in the range [-180°, 180°].
+
+  s12: distance from point 1 to point 2 (meters); can be negative.
+
+ This function is equivalent to calling PositionWithCapabilities with capabilities.Standard.
+*/
 func (l *Line) Position(s12 float64) Data {
 	return l.PositionWithCapabilities(s12, capabilities.Standard)
 }
 
+/*
+ PositionWithCapabilities computes the position of point 2 which is a distance s12 (meters) from
+ point 1. It also allows you to specify which results should be computed and returned via the
+ capabilities.Mask argument. Note that the Line instance must have been created with caps |=
+ capabilities.DistanceIn; otherwise, no parameters are set.
+
+ See Position for more details.
+*/
 func (l *Line) PositionWithCapabilities(s12 float64, caps capabilities.Mask) Data {
 	return l.solvePosition(false, s12, caps)
 }
 
+/*
+ ArcPosition computes the position of point 2 which is an arc length a12 (degrees) from point 1. The
+ values of lon2 and azi2 returned are in the range [-180°, 180°].
+
+  a12: arc length from point 1 to point 2 (degrees); can be negative.
+
+ This function is equivalent to calling ArcPositionWithCapabilities with capabilities.Standard.
+*/
 func (l *Line) ArcPosition(a12 float64) Data {
 	return l.ArcPositionWithCapabilities(a12, capabilities.Standard)
 }
 
+/*
+ ArcPositionWithCapabilities computes the position of point 2 which is an arc length a12 (degrees)
+ from point 1. It also allows you to specify which results should be computed and returned via the
+ capabilities.Mask argument. Note that the Line instance must have been created with caps |=
+ capabilities.DistanceIn; otherwise, no parameters are set.
+
+ See ArcPosition for more details.
+*/
 func (l *Line) ArcPositionWithCapabilities(a12 float64, caps capabilities.Mask) Data {
 	return l.solvePosition(true, a12, caps)
 }
 
 //goland:noinspection GoSnakeCaseUsage
 func (l *Line) solvePosition(arcMode bool, s12_a12 float64, caps capabilities.Mask) Data {
-	r := newData()
 	caps &= capabilities.OutMask
 
-	r.A12, r.Lat2, r.Lon2, r.Azi2, r.S12, r.M12Reduced, r.M12, r.M21, r.S12Area = l.genPosition(arcMode, s12_a12, caps)
-	r.Lat1 = latFix(l.lat1)
+	var lon1 float64
 	if (caps & capabilities.LongUnroll) != 0 {
-		r.Lon1 = l.lon1
+		lon1 = l.lon1
 	} else {
-		r.Lon1 = angNormalize(l.lon1)
+		lon1 = angNormalize(l.lon1)
 	}
-	r.Azi1 = angNormalize(l.azi1)
-	return r
+
+	pr := l.genPosition(arcMode, s12_a12, caps)
+	return Data{
+		Lat1:       latFix(l.lat1),
+		Lon1:       lon1,
+		Azi1:       angNormalize(l.azi1),
+		Lat2:       pr.lat2,
+		Lon2:       pr.lon2,
+		Azi2:       pr.azi2,
+		S12:        pr.s12,
+		A12:        pr.a12,
+		M12Reduced: pr.m12,
+		M12:        pr.M12,
+		M21:        pr.M21,
+		S12Area:    pr.S12,
+	}
+}
+
+type positionResult struct {
+	a12  float64
+	lat2 float64
+	lon2 float64
+	azi2 float64
+	s12  float64
+	m12  float64
+	M12  float64
+	M21  float64
+	S12  float64
 }
 
 //goland:noinspection GoSnakeCaseUsage
-func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask) (a12, lat2, lon2, azi2, s12, m12, M12, M21, S12 float64) {
-	a12, lat2, lon2, azi2, s12, m12, M12, M21, S12 = math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
+func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask) positionResult {
+	r := positionResult{
+		a12:  math.NaN(),
+		lat2: math.NaN(),
+		lon2: math.NaN(),
+		azi2: math.NaN(),
+		s12:  math.NaN(),
+		m12:  math.NaN(),
+		M12:  math.NaN(),
+		M21:  math.NaN(),
+		S12:  math.NaN(),
+	}
+
 	caps &= l.mask & capabilities.OutMask
 	if !arcMode && ((l.mask & capabilities.OutMask & capabilities.DistanceIn) == 0) {
-		return // Uninitialized or impossible distance calculation requested
+		return r // Uninitialized or impossible distance calculation requested
 	}
 
 	var sig12, ssig12, csig12, b12, ab1 float64
 	if arcMode {
 		// Interpret s12_a12 as spherical arc length
-		a12 = s12_a12
+		r.a12 = s12_a12
 		sig12 = deg2rad(s12_a12)
 		ssig12, csig12 = sincosd(s12_a12)
 	} else {
 		// Interpret s12_a12 as distance
-		s12 = s12_a12
+		r.s12 = s12_a12
 		tau12 := s12_a12 / (l.g.b * (1 + l.a1m1))
 		s, c := math.Sincos(tau12)
 		// tau2 = tau1 + tau12
@@ -277,7 +344,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 			ssig12, csig12 = math.Sincos(sig12)
 			// Update B12 below
 		}
-		a12 = rad2deg(sig12)
+		r.a12 = rad2deg(sig12)
 	}
 
 	var ssig2, csig2, sbet2, cbet2, salp2, calp2 float64
@@ -303,7 +370,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 	salp2, calp2 = l.salp0, l.calp0*csig2 // No need to normalize
 
 	if ((caps & capabilities.Distance) != 0) && arcMode {
-		s12 = l.g.b * ((1+l.a1m1)*sig12 + ab1)
+		r.s12 = l.g.b * ((1+l.a1m1)*sig12 + ab1)
 	}
 
 	if (caps & capabilities.Longitude) != 0 {
@@ -320,18 +387,18 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 		lam12 := omg12 + l.a3c*(sig12+(sinCosSeries(true, ssig2, csig2, l.c3a)-l.b31))
 		lon12 := rad2deg(lam12)
 		if (caps & capabilities.LongUnroll) != 0 {
-			lon2 = l.lon1 + lon12
+			r.lon2 = l.lon1 + lon12
 		} else {
-			lon2 = angNormalize(angNormalize(l.lon1) + angNormalize(lon12))
+			r.lon2 = angNormalize(angNormalize(l.lon1) + angNormalize(lon12))
 		}
 	}
 
 	if (caps & capabilities.Latitude) != 0 {
-		lat2 = atan2d(sbet2, l.g.f1*cbet2)
+		r.lat2 = atan2d(sbet2, l.g.f1*cbet2)
 	}
 
 	if (caps & capabilities.Azimuth) != 0 {
-		azi2 = atan2d(salp2, calp2)
+		r.azi2 = atan2d(salp2, calp2)
 	}
 
 	if (caps & (capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
@@ -341,12 +408,12 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 		if (caps & capabilities.ReducedLength) != 0 {
 			// Add parens around (l.csig1 * ssig2) and (l.ssig1 * csig2) to ensure
 			// accurate cancellation in the case of coincident points.
-			m12 = l.g.b * ((dn2*(l.csig1*ssig2) - l.dn1*(l.ssig1*csig2)) - l.csig1*csig2*j12)
+			r.m12 = l.g.b * ((dn2*(l.csig1*ssig2) - l.dn1*(l.ssig1*csig2)) - l.csig1*csig2*j12)
 		}
 		if (caps & capabilities.GeodesicScale) != 0 {
 			t := l.k2 * (ssig2 - l.ssig1) * (ssig2 + l.ssig1) / (l.dn1 + dn2)
-			M12 = csig12 + (t*ssig2-csig2*j12)*l.ssig1/l.dn1
-			M21 = csig12 - (t*l.ssig1-l.csig1*j12)*ssig2/dn2
+			r.M12 = csig12 + (t*ssig2-csig2*j12)*l.ssig1/l.dn1
+			r.M21 = csig12 - (t*l.ssig1-l.csig1*j12)*ssig2/dn2
 		}
 	}
 
@@ -375,9 +442,9 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 			salp12 = l.calp0 * l.salp0 * t
 			calp12 = sq(l.salp0) + sq(l.calp0)*l.csig1*csig2
 		}
-		S12 = l.g.c2*math.Atan2(salp12, calp12) + l.a4*(b42-l.b41)
+		r.S12 = l.g.c2*math.Atan2(salp12, calp12) + l.a4*(b42-l.b41)
 	}
-	return
+	return r
 }
 
 // SetDistance specifies the position of point 3 on the geodesic in terms of distance (meters). This
@@ -394,10 +461,12 @@ func (l *Line) SetArc(a13 float64) {
 	l.s13 = l.ArcPositionWithCapabilities(a13, capabilities.Distance).S12
 }
 
+// Distance returns s13, the distance to point 3 (meters).
 func (l *Line) Distance() float64 {
 	return l.s13
 }
 
+// Arc returns a13, the arc length to point 3 (degrees).
 func (l *Line) Arc() float64 {
 	return l.a13
 }
