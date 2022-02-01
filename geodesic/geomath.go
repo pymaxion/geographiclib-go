@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	// digits represents the number of binary digits in the fraction of a double precision number.
-	// This is equivalent to C++'s numeric_limits<double>::digits.
+	// digits represents the number of binary digits in the fraction of a double
+	// precision number. This is equivalent to C++'s numeric_limits<double>::digits.
 	digits        = 53
 	geodesicOrder = 6
 	nA1           = geodesicOrder
@@ -26,9 +26,10 @@ const (
 
 var (
 	epsilon = math.Nextafter(1., 2.) - 1. // https://stackoverflow.com/a/22185792/4755732
-	// tiny is an underflow guard. We require tiny * epsilon > 0 and tiny + epsilon == epsilon. Note
-	// that we are using 2^-1022 here instead of math.SmallestNonzeroFloat64 to maintain consistency
-	// with other geographiclib implementations.
+	// tiny is an underflow guard. We require tiny * epsilon > 0 and tiny + epsilon
+	// == epsilon. Note that we are using 2^-1022 here instead of
+	// math.SmallestNonzeroFloat64 to maintain consistency with other geographiclib
+	// implementations.
 	tiny    = math.Sqrt(math.Pow(2, -1022))
 	tol0    = epsilon
 	tol1    = 200 * tol0
@@ -42,8 +43,9 @@ func sq(x float64) float64 {
 	return x * x
 }
 
-// atanh calculates the inverse hyperbolic tangent of x. This is defined in terms of log1p(x) in
-// order to maintain accuracy near x = 0. In addition, the odd parity of the function is enforced.
+// atanh calculates the inverse hyperbolic tangent of x. This is defined in terms
+// of log1p(x) in order to maintain accuracy near x = 0. In addition, the odd
+// parity of the function is enforced.
 func atanh(x float64) float64 {
 	y := math.Abs(x) // enforce odd parity
 	y = math.Log1p(2*y/(1-y)) / 2
@@ -66,8 +68,8 @@ func norm(sinx, cosx float64) (float64, float64) {
 	return sinx / r, cosx / r
 }
 
-// sum returns the error-free sum (s, t) of two numbers (u, v) where s = round(u+v) and t = u+v-s.
-// See D. E. Knuth, TAOCP, Vol 2, 4.2.2, Theorem B.
+// sum returns the error-free sum (s, t) of two numbers (u, v) where s =
+// round(u+v) and t = u+v-s. See D. E. Knuth, TAOCP, Vol 2, 4.2.2, Theorem B.
 func sum(u, v float64) (float64, float64) {
 	s := u + v
 	up := s - v
@@ -98,10 +100,11 @@ func polyval(n int, p []float64, s int, x float64) float64 {
 	return y
 }
 
-// angRound coarsens a value close to zero. The makes the smallest gap in x = 1/16 - nextafter(1/16,
-// 0) = 1/2^57 for reals = 0.7 pm on the earth if x is an angle in degrees. (This is about 1000
-// times more resolution than we get with angles around 90 degrees.) We use this to avoid having to
-// deal with near singular cases when x is non-zero but tiny (e.g., 1.0e-200). Note that tiny
+// angRound coarsens a value close to zero. The makes the smallest gap in x =
+// 1/16 - nextafter(1/16, 0) = 1/2^57 for reals = 0.7 pm on the earth if x is an
+// angle in degrees. (This is about 1000 times more resolution than we get with
+// angles around 90 degrees.) We use this to avoid having to deal with near
+// singular cases when x is non-zero but tiny (e.g., 1.0e-200). Note that tiny
 // negative numbers get converted to -0.
 func angRound(x float64) float64 {
 	if x == 0 {
@@ -120,8 +123,8 @@ func angRound(x float64) float64 {
 	}
 }
 
-// remainder calculates the remainder of x/y in the range [-y/2, y/2]. The range of x is
-// unrestricted, but y must be positive.
+// remainder calculates the remainder of x/y in the range [-y/2, y/2]. The range
+// of x is unrestricted, but y must be positive.
 func remainder(x, y float64) float64 {
 	x = math.Mod(x, y)
 	if x < -y/2 {
@@ -152,10 +155,11 @@ func latFix(x float64) float64 {
 	}
 }
 
-// angDiff calculates the exact difference of two angles in degrees, reduced to (-180, 180]. More
-// specifically, this function z = y - x exactly, reduced to (-180, 180], and then sets z = d + e
-// where d is the nearest representable number to z and e is the truncation error. If d = -180, then
-// e > 0; if d = 180, then e <= 0.
+// angDiff calculates the exact difference of two angles in degrees, reduced to
+// (-180, 180]. More specifically, this function z = y - x exactly, reduced to
+// (-180, 180], and then sets z = d + e where d is the nearest representable
+// number to z and e is the truncation error. If d = -180, then e > 0; if d =
+// 180, then e <= 0.
 func angDiff(x, y float64) (float64, float64) {
 	d, t := sum(angNormalize(-x), angNormalize(y))
 	d = angNormalize(d)
@@ -176,8 +180,9 @@ func rad2deg(r float64) float64 {
 	return r * 180.0 / math.Pi
 }
 
-// sincosd calculates the sine and cosine of x in degrees. The results obey exactly the elementary
-// properties of the trigonometric functions, e.g., sin 9 = cos 81 = - sin 123456789.
+// sincosd calculates the sine and cosine of x in degrees. The results obey
+// exactly the elementary properties of the trigonometric functions, e.g., sin 9
+// = cos 81 = - sin 123456789.
 func sincosd(x float64) (float64, float64) {
 	// In order to minimize round-off errors, this function exactly reduces the argument to the
 	//  range [-45, 45] before converting it to radians.
@@ -215,13 +220,14 @@ func sincosd(x float64) (float64, float64) {
 	return sinx, cosx
 }
 
-// atan2d calculates atan2(y, x) with the result in degrees where y = the sine of the angle and x =
-// the cosine of the angle. The result is in the range (-180 180]. N.B., atan2d(±0, -1) = +180;
-// atan2d(-ε, -1) = -180, for ε positive and tiny; atan2d(±0, 1) = ±0.
+// atan2d calculates atan2(y, x) with the result in degrees where y = the sine of
+// the angle and x = the cosine of the angle. The result is in the range (-180
+// 180]. N.B., atan2d(±0, -1) = +180; atan2d(-ε, -1) = -180, for ε positive and
+// tiny; atan2d(±0, 1) = ±0.
 func atan2d(y, x float64) float64 {
-	// In order to minimize round-off errors, this function rearranges the arguments so that result
-	// of atan2 is in the range [-pi/4, pi/4] before converting it to degrees and mapping the result
-	// to the correct quadrant.
+	// In order to minimize round-off errors, this function rearranges the arguments
+	// so that result of atan2 is in the range [-pi/4, pi/4] before converting it to
+	// degrees and mapping the result to the correct quadrant.
 	q := 0
 	if math.Abs(y) > math.Abs(x) {
 		q = 2
@@ -284,8 +290,8 @@ func sinCosSeries(sinp bool, sinx, cosx float64, c []float64) float64 {
 	// Evaluate:
 	//  y = sinp ? sum(c[i] * sin( 2*i    * x), i, 1, n) :
 	//             sum(c[i] * cos((2*i+1) * x), i, 0, n-1)
-	// using Clenshaw summation. N.B. c[0] is unused for sin series Approx operation count = (n + 5)
-	// mult and (2 * n + 2) add
+	// using Clenshaw summation. N.B. c[0] is unused for sin series Approx operation
+	// count = (n + 5) mult and (2 * n + 2) add
 	k := len(c) // Point to one beyond last element
 	n := k - int(ternary(sinp, 1, 0))
 	ar := 2 * (cosx - sinx) * (cosx + sinx) // 2 * cos(2 * x)

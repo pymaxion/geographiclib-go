@@ -36,8 +36,9 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		calp2: math.NaN(),
 	}
 
-	// Compute longitude difference (AngDiff does this carefully). Result is in [-180, 180] but -180
-	// is only for west-going geodesics. 180 is for east-going and meridional geodesics.
+	// Compute longitude difference (AngDiff does this carefully). Result is in
+	// [-180, 180] but -180 is only for west-going geodesics. 180 is for east-going
+	// and meridional geodesics.
 	lat1, lat2 = latFix(lat1), latFix(lat2)
 	r.Lat1, r.Lat2 = lat1, lat2
 
@@ -78,10 +79,11 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	//     -90 <= lat1 <= 0
 	//     lat1 <= lat2 <= -lat1
 	//
-	// lonSign, swapp, latSign register the transformation to bring the coordinates to this canonical
-	// form. In all cases, 1 means no change was made. We make these transformations so that there
-	// are few cases to check, e.g., on verifying quadrants in atan2. In addition, this enforces some
-	// symmetries in the results returned.
+	// lonSign, swapp, latSign register the transformation to bring the coordinates
+	// to this canonical form. In all cases, 1 means no change was made. We make
+	// these transformations so that there are few cases to check, e.g., on verifying
+	// quadrants in atan2. In addition, this enforces some symmetries in the results
+	// returned.
 
 	sbet1, cbet1 := sincosd(lat1)
 	sbet1 *= s.f1
@@ -95,12 +97,13 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	sbet2, cbet2 = norm(sbet2, cbet2)
 	cbet2 = math.Max(tiny, cbet2)
 
-	// If cbet1 < -sbet1, then cbet2 - cbet1 is a sensitive measure of the |bet1| - |bet2|.
-	// Alternatively (cbet1 >= -sbet1), abs(sbet2) + sbet1 is a better measure. This logic is used in
-	// assigning calp2 in Lambda12. Sometimes these quantities vanish and in that case we force bet2
-	// = +/- bet1 exactly. An example where is is necessary is the inverse problem 48.522876735459 0
-	// -48.52287673545898293 179.599720456223079643 which failed with Visual Studio 10 (Release and
-	// Debug)
+	// If cbet1 < -sbet1, then cbet2 - cbet1 is a sensitive measure of the |bet1| -
+	// |bet2|. Alternatively (cbet1 >= -sbet1), abs(sbet2) + sbet1 is a better
+	// measure. This logic is used in assigning calp2 in Lambda12. Sometimes these
+	// quantities vanish and in that case we force bet2 = +/- bet1 exactly. An
+	// example where is is necessary is the inverse problem 48.522876735459 0
+	// -48.52287673545898293 179.599720456223079643 which failed with Visual Studio
+	// 10 (Release and Debug)
 	if cbet1 < -sbet1 {
 		if cbet2 == cbet1 {
 			sbet2 = ternary(sbet2 < 0, sbet1, -sbet1)
@@ -132,11 +135,13 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		lCaps := caps | capabilities.Distance | capabilities.ReducedLength
 		lr := s.lengths(s.n, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2, lCaps, c1a, c2a)
 		s12x, m12x, r.M12, r.M21 = lr.s12b, lr.m12b, lr.M12, lr.M21
-		// Add the check for sig12 since zero length geodesics might yield m12 < 0. Test case was:
+		// Add the check for sig12 since zero length geodesics might yield m12 < 0. Test
+		// case was:
 		//
 		//    echo 20.001 0 20.001 0 | GeodSolve -i
 		//
-		// In fact, we will have sig12 > pi/2 for meridional geodesic which is not a shortest path.
+		// In fact, we will have sig12 > pi/2 for meridional geodesic which is not a
+		// shortest path.
 		if sig12 < 1 || m12x >= 0 {
 			// Need at least 2, to handle 90 0 90 180
 			if sig12 < 3*tiny ||
@@ -188,17 +193,16 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			r.A12 = rad2deg(sig12)
 			omg12 = lam12 / (s.f1 * sr.dnm)
 		} else {
-			// Newton's method.  This is a straightforward solution of f(alp1) =
-			// lambda12(alp1) - lam12 = 0 with one wrinkle.  f(alp) has exactly one
-			// root in the interval (0, pi) and its derivative is positive at the
-			// root.  Thus f(alp) is positive for alp > alp1 and negative for alp <
-			// alp1.  During the course of the iteration, a range (alp1a, alp1b) is
-			// maintained which brackets the root and with each evaluation of
-			// f(alp) the range is shrunk, if possible.  Newton's method is
-			// restarted whenever the derivative of f is negative (because the new
-			// value of alp1 is then further from the solution) or if the new
-			// estimate of alp1 lies outside (0,pi); in this case, the new starting
-			// guess is taken to be (alp1a + alp1b) / 2.
+			// Newton's method. This is a straightforward solution of f(alp1) =
+			// lambda12(alp1) - lam12 = 0 with one wrinkle. f(alp) has exactly one root in
+			// the interval (0, pi) and its derivative is positive at the root. Thus f(alp)
+			// is positive for alp > alp1 and negative for alp < alp1. During the course of
+			// the iteration, a range (alp1a, alp1b) is maintained which brackets the root
+			// and with each evaluation of f(alp) the range is shrunk, if possible. Newton's
+			// method is restarted whenever the derivative of f is negative (because the new
+			// value of alp1 is then further from the solution) or if the new estimate of
+			// alp1 lies outside (0,pi); in this case, the new starting guess is taken to be
+			// (alp1a + alp1b) / 2.
 			numit := 0
 			// Bracketing range
 			salp1a, calp1a := tiny, 1.
@@ -240,10 +244,10 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 				}
 
 				// Either dV was not positive or updated value was outside legal range. Use the
-				// midpoint of the bracket as the next estimate. This mechanism is not needed for the
-				// WGS84 ellipsoid, but it does catch problems with more eccentric ellipsoids. Its
-				// efficacy is such for the WGS84 logic set with the starting guess set to alp1 =
-				// 90deg:
+				// midpoint of the bracket as the next estimate. This mechanism is not needed for
+				// the WGS84 ellipsoid, but it does catch problems with more eccentric
+				// ellipsoids. Its efficacy is such for the WGS84 logic set with the starting
+				// guess set to alp1 = 90deg:
 				//  the WGS84 logic set: mean = 5.21, sr = 3.93, max = 24
 				//  WGS84 and random input: mean = 4.74, sr = 0.99
 				r.salp1, r.calp1 = (salp1a+salp1b)/2, (calp1a+calp1b)/2
@@ -321,9 +325,9 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		} else {
 			// alp12 = alp2 - alp1, used in atan2 so no need to normalize
 			salp12, calp12 := r.salp2*r.calp1-r.calp2*r.salp1, r.calp2*r.calp1+r.salp2*r.salp1
-			// The right thing appears to happen if alp1 = +/-180 and alp2 = 0, viz salp12 = -0 and
-			// alp12 = -180. However this depends on the sign being attached to 0 correctly. The
-			// following ensures the correct behavior.
+			// The right thing appears to happen if alp1 = +/-180 and alp2 = 0, viz salp12 =
+			// -0 and alp12 = -180. However this depends on the sign being attached to 0
+			// correctly. The following ensures the correct behavior.
 			if salp12 == 0 && calp12 < 0 {
 				salp12, calp12 = tiny*r.calp1, -1
 			}
@@ -369,8 +373,8 @@ func (s *inverseSolver) lengths(eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2
 		M21:  math.NaN(),
 	}
 
-	// Return m12b = (reduced length)/b; also calculate s12b = distance/b, and m0 = coefficient of
-	// secular term in expression for reduced length.
+	// Return m12b = (reduced length)/b; also calculate s12b = distance/b, and m0 =
+	// coefficient of secular term in expression for reduced length.
 	caps &= capabilities.OutMask
 	var m0x, j12, a1, a2 float64
 	if (caps & (capabilities.Distance | capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
@@ -427,9 +431,9 @@ type startResult struct {
 	dnm   float64
 }
 
-// inverseStart returns a starting point for Newton's method in salp1 and calp1 (function value is
-// -1). If Newton's method doesn't need to be used, return also salp2 and calp2 and function value
-// is sig12.
+// inverseStart returns a starting point for Newton's method in salp1 and calp1
+// (function value is -1). If Newton's method doesn't need to be used, return
+// also salp2 and calp2 and function value is sig12.
 func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12, slam12, clam12 float64, c1a, c2a []float64) startResult {
 	r := startResult{
 		sig12: -1,
@@ -532,10 +536,10 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 			//   calp1 = y/k; salp1 = -x/(1+k);  for _f >= 0
 			//   calp1 = x/(1+k); salp1 = -y/k;  for _f < 0 (need to check)
 			//
-			// However, it's better to estimate omg12 from astroid and use spherical formula to
-			// compute alp1. This reduces the mean number of Newton iterations for astroid cases from
-			// 2.24 (min 0, max 6) to 2.12 (min 0 max 5). The changes in the number of iterations are
-			// as follows:
+			// However, it's better to estimate omg12 from astroid and use spherical formula
+			// to compute alp1. This reduces the mean number of Newton iterations for astroid
+			// cases from 2.24 (min 0, max 6) to 2.12 (min 0 max 5). The changes in the
+			// number of iterations are as follows:
 			//
 			// change percent
 			//    1       5
@@ -545,8 +549,9 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 			//   -3       0.04
 			//   -4       0.002
 			//
-			// The histogram of iterations is (m = number of iterations estimating alp1 directly, n =
-			// number of iterations estimating via omg12, total number of trials = 148605):
+			// The histogram of iterations is (m = number of iterations estimating alp1
+			// directly, n = number of iterations estimating via omg12, total number of
+			// trials = 148605):
 			//
 			//  iter    m      n
 			//    0   148    186
@@ -583,27 +588,27 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 	return r
 }
 
-// astroid solves the astroid equation k^4+2*k^3-(x^2+y^2-1)*k^2-2*y^2*k-y^2 = 0 for positive root
-// k. This solution is adapted from Geocentric::Reverse.
+// astroid solves the astroid equation k^4+2*k^3-(x^2+y^2-1)*k^2-2*y^2*k-y^2 = 0
+// for positive root k. This solution is adapted from Geocentric::Reverse.
 func (s *inverseSolver) astroid(x, y float64) float64 {
 	var k float64
 	p, q := sq(x), sq(y)
 	r := (p + q - 1) / 6
 	if !(q == 0 && r <= 0) {
-		// Avoid possible division by zero when r = 0 by multiplying equations
-		// for s and t by r^3 and r, resp.
+		// Avoid possible division by zero when r = 0 by multiplying equations for s and
+		// t by r^3 and r, resp.
 		S := p * q / 4 // S = r^3 * s
 		r2 := sq(r)
 		r3 := r * r2
-		// The discriminant of the quadratic equation for T3.  This is zero on
-		// the evolute curve p^(1/3)+q^(1/3) = 1
+		// The discriminant of the quadratic equation for T3. This is zero on the evolute
+		// curve p^(1/3)+q^(1/3) = 1
 		disc := S * (S + 2*r3)
 		u := r
 		if disc >= 0 {
 			T3 := S + r3
-			// Pick the sign on the sqrt to maximize abs(T3).  This minimizes loss
-			// of precision due to cancellation.  The result is unchanged because
-			// of the way the T is used in definition of u.
+			// Pick the sign on the sqrt to maximize abs(T3). This minimizes loss of
+			// precision due to cancellation. The result is unchanged because of the way the
+			// T is used in definition of u.
 			j := math.Sqrt(disc)
 			T3 += ternary(T3 < 0, -j, j) // T3 = (r * t)^3
 			// N.B. cbrt always returns the root.  cbrt(-8) = -2.
@@ -618,8 +623,8 @@ func (s *inverseSolver) astroid(x, y float64) float64 {
 		} else {
 			// T is complex, but the way u is defined the result is .
 			ang := math.Atan2(math.Sqrt(-disc), -(S + r3))
-			// There are three possible cube roots. We choose the root which avoids cancellation.
-			// Note that disc < 0 implies that r < 0.
+			// There are three possible cube roots. We choose the root which avoids
+			// cancellation. Note that disc < 0 implies that r < 0.
 			u += 2 * r * math.Cos(ang/3)
 		}
 		v := math.Sqrt(sq(u) + q) // guaranteed positive
@@ -631,8 +636,8 @@ func (s *inverseSolver) astroid(x, y float64) float64 {
 			uv = u + v // u+v, guaranteed positive
 		}
 		w := (uv - q) / (2 * v) // positive?
-		// Rearrange expression for k to avoid loss of accuracy due to
-		// subtraction.  Division by 0 not possible because uv > 0, w >= 0.
+		// Rearrange expression for k to avoid loss of accuracy due to subtraction.
+		// Division by 0 not possible because uv > 0, w >= 0.
 		k = uv / (math.Sqrt(uv+sq(w)) + w) // guaranteed positive
 	} else { // q == 0 && r <= 0
 		// y = 0 with |x| <= 1.  Handle this case directly.
@@ -686,7 +691,8 @@ func (s *inverseSolver) lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, salp1, ca
 	}
 	// calp2 = sqrt(1 - sq(salp2))
 	//       = sqrt(sq(calp0) - sq(sbet2)) / cbet2
-	// and subst for calp0 and rearrange to give (choose positive sqrt to give alp2 in [0, pi/2]).
+	// and subst for calp0 and rearrange to give (choose positive sqrt to give alp2
+	// in [0, pi/2]).
 	if cbet2 != cbet1 || math.Abs(sbet2) != -sbet1 {
 		var t float64
 		if cbet1 < -sbet1 {

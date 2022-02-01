@@ -7,26 +7,30 @@ import (
 )
 
 /*
- Line represents a geodesic line and facilitates the determination of a series of points on a single
- geodesic. Geodesic.Line method should be used to create an instance of Line.
+ Line represents a geodesic line and facilitates the determination of a series of
+ points on a single geodesic. Geodesic.Line method should be used to create an
+ instance of Line.
 
- Position returns the location of point 2 a distance s12 along the geodesic. Alternatively,
- ArcPosition gives the position of point 2 an arc length a12 along the geodesic. The additional
- functions PositionWithCapabilities and ArcPositionWithCapabilities include an optional final
- argument of type capabilities.Mask to allow you to specify which results should be computed and
+ Position returns the location of point 2 a distance s12 along the geodesic.
+ Alternatively, ArcPosition gives the position of point 2 an arc length a12 along
+ the geodesic. The additional functions PositionWithCapabilities and
+ ArcPositionWithCapabilities include an optional final argument of type
+ capabilities.Mask to allow you to specify which results should be computed and
  returned.
 
- You can register the position of a reference point 3 a distance (arc length), s13 (a13) along the
- geodesic with the SetDistance (SetArc) functions. Points a fractional distance along the line can
- be found by providing, for example, 0.5 * Distance as an argument to Position. The
- Geodesic.InverseLine or Geodesic.DirectLine functions return Line instances with point 3 set to the
- point 2 of the corresponding geodesic problem. Line instances created Geodesic.Line have s13 and
- a13 set to math.NaN.
+ You can register the position of a reference point 3 a distance (arc length),
+ s13 (a13) along the geodesic with the SetDistance (SetArc) functions. Points a
+ fractional distance along the line can be found by providing, for example, 0.5 *
+ Distance as an argument to Position. The Geodesic.InverseLine or
+ Geodesic.DirectLine functions return Line instances with point 3 set to the
+ point 2 of the corresponding geodesic problem. Line instances created
+ Geodesic.Line have s13 and a13 set to math.NaN.
 
- The calculations are accurate to better than 15 nm (15 nanometers). See Sec. 9 of arXiv:1102.1215v1
- (https://arxiv.org/abs/1102.1215v1) for details. The algorithms used by this class are based on
- series expansions using the flattening f as a small parameter. These are only accurate for |f| <
- 0.02; however reasonably accurate results will be obtained for |f| < 0.2.
+ The calculations are accurate to better than 15 nm (15 nanometers). See Sec. 9
+ of arXiv:1102.1215v1 (https://arxiv.org/abs/1102.1215v1) for details. The
+ algorithms used by this class are based on series expansions using the
+ flattening f as a small parameter. These are only accurate for |f| < 0.02;
+ however reasonably accurate results will be obtained for |f| < 0.2.
 
  The algorithms are described in
   C. F. F. Karney, Algorithms for geodesics, J. Geodesy 87, 43-55 (2013)
@@ -86,18 +90,16 @@ func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilit
 
 	// Evaluate alp0 from sin(alp1) * cos(bet1) = sin(alp0),
 	salp0 := salp1 * cbet1 // alp0 in [0, pi/2 - |bet1|]
-	// Alt: calp0 = Math.hypot(sbet1, calp1 * cbet1).  The following
-	// is slightly better (consider the case salp1 = 0).
+	// Alt: calp0 = Math.hypot(sbet1, calp1 * cbet1). The following is slightly
+	// better (consider the case salp1 = 0).
 	calp0 := math.Hypot(calp1, salp1*sbet1)
-	// Evaluate sig with tan(bet1) = tan(sig1) * cos(alp1).
-	// sig = 0 is nearest northward crossing of equator.
-	// With bet1 = 0, alp1 = pi/2, we have sig1 = 0 (equatorial line).
-	// With bet1 =  pi/2, alp1 = -pi, sig1 =  pi/2
-	// With bet1 = -pi/2, alp1 =  0 , sig1 = -pi/2
-	// Evaluate omg1 with tan(omg1) = sin(alp0) * tan(sig1).
-	// With alp0 in (0, pi/2], quadrants for sig and omg coincide.
-	// No atan2(0,0) ambiguity at poles since cbet1 = +epsilon.
-	// With alp0 = 0, omg1 = 0 for alp1 = 0, omg1 = pi for alp1 = pi.
+	// Evaluate sig with tan(bet1) = tan(sig1) * cos(alp1). sig = 0 is nearest
+	// northward crossing of equator. With bet1 = 0, alp1 = pi/2, we have sig1 = 0
+	// (equatorial line). With bet1 = pi/2, alp1 = -pi, sig1 = pi/2 With bet1 =
+	// -pi/2, alp1 = 0 , sig1 = -pi/2 Evaluate omg1 with tan(omg1) = sin(alp0) *
+	// tan(sig1). With alp0 in (0, pi/2], quadrants for sig and omg coincide. No
+	// atan2(0,0) ambiguity at poles since cbet1 = +epsilon. With alp0 = 0, omg1 = 0
+	// for alp1 = 0, omg1 = pi for alp1 = pi.
 	ssig1 := sbet1
 	somg1 := salp0 * sbet1
 	csig1 := 1.
@@ -192,22 +194,24 @@ func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilit
 }
 
 /*
- Position computes the position of point 2 which is a distance s12 (meters) from point 1. The values
- of lon2 and azi2 returned are in the range [-180°, 180°].
+ Position computes the position of point 2 which is a distance s12 (meters) from
+ point 1. The values of lon2 and azi2 returned are in the range [-180°, 180°].
 
   s12: distance from point 1 to point 2 (meters); can be negative.
 
- This function is equivalent to calling PositionWithCapabilities with capabilities.Standard.
+ This function is equivalent to calling PositionWithCapabilities with
+ capabilities.Standard.
 */
 func (l *Line) Position(s12 float64) Data {
 	return l.PositionWithCapabilities(s12, capabilities.Standard)
 }
 
 /*
- PositionWithCapabilities computes the position of point 2 which is a distance s12 (meters) from
- point 1. It also allows you to specify which results should be computed and returned via the
- capabilities.Mask argument. Note that the Line instance must have been created with caps |=
- capabilities.DistanceIn; otherwise, no parameters are set.
+ PositionWithCapabilities computes the position of point 2 which is a distance
+ s12 (meters) from point 1. It also allows you to specify which results should be
+ computed and returned via the capabilities.Mask argument. Note that the Line
+ instance must have been created with caps |= capabilities.DistanceIn; otherwise,
+ no parameters are set.
 
  See Position for more details.
 */
@@ -216,22 +220,25 @@ func (l *Line) PositionWithCapabilities(s12 float64, caps capabilities.Mask) Dat
 }
 
 /*
- ArcPosition computes the position of point 2 which is an arc length a12 (degrees) from point 1. The
- values of lon2 and azi2 returned are in the range [-180°, 180°].
+ ArcPosition computes the position of point 2 which is an arc length a12
+ (degrees) from point 1. The values of lon2 and azi2 returned are in the range
+ [-180°, 180°].
 
   a12: arc length from point 1 to point 2 (degrees); can be negative.
 
- This function is equivalent to calling ArcPositionWithCapabilities with capabilities.Standard.
+ This function is equivalent to calling ArcPositionWithCapabilities with
+ capabilities.Standard.
 */
 func (l *Line) ArcPosition(a12 float64) Data {
 	return l.ArcPositionWithCapabilities(a12, capabilities.Standard)
 }
 
 /*
- ArcPositionWithCapabilities computes the position of point 2 which is an arc length a12 (degrees)
- from point 1. It also allows you to specify which results should be computed and returned via the
- capabilities.Mask argument. Note that the Line instance must have been created with caps |=
- capabilities.DistanceIn; otherwise, no parameters are set.
+ ArcPositionWithCapabilities computes the position of point 2 which is an arc
+ length a12 (degrees) from point 1. It also allows you to specify which results
+ should be computed and returned via the capabilities.Mask argument. Note that
+ the Line instance must have been created with caps |= capabilities.DistanceIn;
+ otherwise, no parameters are set.
 
  See ArcPosition for more details.
 */
@@ -314,10 +321,9 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 		sig12 = tau12 - (b12 - l.b11)
 		ssig12, csig12 = math.Sincos(sig12)
 		if math.Abs(l.g.f) > 0.01 {
-			// Reverted distance series is inaccurate for |f| > 1/100, so correct
-			// sig12 with 1 Newton iteration.  The following table shows the
-			// approximate maximum error for a = WGS_a() and various f relative to
-			// GeodesicExact.
+			// Reverted distance series is inaccurate for |f| > 1/100, so correct sig12 with
+			// 1 Newton iteration. The following table shows the approximate maximum error
+			// for a = WGS_a() and various f relative to GeodesicExact.
 			//     erri = the error in the inverse solution (nm)
 			//     errd = the error in the direct solution (series only) (nm)
 			//     errda = the error in the direct solution
@@ -447,15 +453,17 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 	return r
 }
 
-// SetDistance specifies the position of point 3 on the geodesic in terms of distance (meters). This
-// is only useful if the Line instance was created with capabilities.DistanceIn.
+// SetDistance specifies the position of point 3 on the geodesic in terms of
+// distance (meters). This is only useful if the Line instance was created with
+// capabilities.DistanceIn.
 func (l *Line) SetDistance(s13 float64) {
 	l.s13 = s13
 	l.a13 = l.PositionWithCapabilities(s13, capabilities.None).A12
 }
 
-// SetArc specifies the position of point 3 on the geodesic in terms of arc length (degrees). This
-// is only useful if the Line instance was created with capabilities.Distance.
+// SetArc specifies the position of point 3 on the geodesic in terms of arc
+// length (degrees). This is only useful if the Line instance was created with
+// capabilities.Distance.
 func (l *Line) SetArc(a13 float64) {
 	l.a13 = a13
 	l.s13 = l.ArcPositionWithCapabilities(a13, capabilities.Distance).S12
