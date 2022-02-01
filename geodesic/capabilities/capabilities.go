@@ -1,12 +1,15 @@
 package capabilities
 
-// Mask represents a set of geodesic calculations to perform as an integer bitmask.
+// Mask represents a set of geodesic calculations to perform as an integer
+// bitmask.
 //
-// When used as an argument to Geodesic.DirectWithCapabilities and Geodesic.InverseWithCapabilities,
-// Mask specifies which results to return in the GeodesicData struct.
+// When used as an argument to Geodesic.DirectWithCapabilities and
+// Geodesic.InverseWithCapabilities, Mask specifies which results to return in
+// the GeodesicData struct.
 //
-// When used as an argument to NewGeodesicLineWithCapabilities and Geodesic.LineWithCapabilities,
-// Mask specifies which capabilities should be included in the GeodesicLine struct.
+// When used as an argument to NewGeodesicLineWithCapabilities and
+// Geodesic.LineWithCapabilities, Mask specifies which capabilities should be
+// included in the GeodesicLine struct.
 type Mask int
 
 const (
@@ -24,25 +27,27 @@ const (
 	// None specifies: no capabilities, no output.
 	None Mask = 0
 
-	// Latitude specifies: calculate latitude lat2. (It's not necessary to include this as a
-	// capability to GeodesicLine because this is included by default.)
+	// Latitude specifies: calculate latitude lat2. (It's not necessary to include
+	// this as a capability to GeodesicLine because this is included by default.)
 	Latitude = 1<<7 | none
 
 	// Longitude specifies: calculate longitude lon2.
 	Longitude = 1<<8 | C3
 
-	// Azimuth specifies: calculate azimuths azi1 and azi2. (It's not necessary to include this as a
-	// capability to GeodesicLine because this is included by default.)
+	// Azimuth specifies: calculate azimuths azi1 and azi2. (It's not necessary to
+	// include this as a capability to GeodesicLine because this is included by
+	// default.)
 	Azimuth = 1<<9 | none
 
 	// Distance specifies: calculate distance s12.
 	Distance = 1<<10 | C1
 
-	// Standard specifies the default output and capabilities (latitudes, longitudes, azimuths, and
-	// distance)
+	// Standard specifies the default output and capabilities (latitudes, longitudes,
+	// azimuths, and distance)
 	Standard = Latitude | Longitude | Azimuth | Distance
 
-	// DistanceIn specifies: allow distance s12 to be used as input in the direct geodesic problem.
+	// DistanceIn specifies: allow distance s12 to be used as input in the direct
+	// geodesic problem.
 	DistanceIn = 1<<11 | C1 | C1p
 
 	// ReducedLength specifies: calculate reduced length m12.
@@ -54,7 +59,8 @@ const (
 	// Area specifies: calculate area S12.
 	Area = 1<<14 | C4
 
-	// All capabilities, calculate everything. (LongUnroll is not included in this caps.)
+	// All capabilities, calculate everything. (LongUnroll is not included in this
+	// caps.)
 	All = outAll | all
 
 	// LongUnroll specifies: unroll lon2.

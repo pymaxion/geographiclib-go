@@ -660,7 +660,7 @@ func (p *planimeterTest) String() string {
 }
 
 func planimeter(points [][]float64) PolygonResult {
-	polygon := newPolygonArea(WGS84, false)
+	polygon := NewPolygonArea(WGS84, false)
 	for i := 0; i < len(points); i++ {
 		polygon.AddPoint(points[i][0], points[i][1])
 	}
@@ -668,7 +668,7 @@ func planimeter(points [][]float64) PolygonResult {
 }
 
 func polyLength(points [][]float64) PolygonResult {
-	polyline := newPolygonArea(WGS84, true)
+	polyline := NewPolygonArea(WGS84, true)
 	for i := 0; i < len(points); i++ {
 		polyline.AddPoint(points[i][0], points[i][1])
 	}
@@ -682,27 +682,27 @@ var (
 		logic: func(t *testing.T) {
 			pa := [][]float64{{89, 0}, {89, 90}, {89, 180}, {89, 270}}
 			a := planimeter(pa)
-			assert.InDelta(t, 631819.8745, a.perimeter, 1e-4)
-			assert.InDelta(t, 24952305678.0, a.area, 1)
+			assert.InDelta(t, 631819.8745, a.Perimeter, 1e-4)
+			assert.InDelta(t, 24952305678.0, a.Area, 1)
 
 			pb := [][]float64{{-89, 0}, {-89, 90}, {-89, 180}, {-89, 270}}
 			a = planimeter(pb)
-			assert.InDelta(t, 631819.8745, a.perimeter, 1e-4)
-			assert.InDelta(t, -24952305678.0, a.area, 1)
+			assert.InDelta(t, 631819.8745, a.Perimeter, 1e-4)
+			assert.InDelta(t, -24952305678.0, a.Area, 1)
 
 			pc := [][]float64{{0, -1}, {-1, 0}, {0, 1}, {1, 0}}
 			a = planimeter(pc)
-			assert.InDelta(t, 627598.2731, a.perimeter, 1e-4)
-			assert.InDelta(t, 24619419146.0, a.area, 1)
+			assert.InDelta(t, 627598.2731, a.Perimeter, 1e-4)
+			assert.InDelta(t, 24619419146.0, a.Area, 1)
 
 			pd := [][]float64{{90, 0}, {0, 0}, {0, 90}}
 			a = planimeter(pd)
-			assert.InDelta(t, 30022685, a.perimeter, 1)
-			assert.InDelta(t, 63758202715511.0, a.area, 1)
+			assert.InDelta(t, 30022685, a.Perimeter, 1)
+			assert.InDelta(t, 63758202715511.0, a.Area, 1)
 
 			a = polyLength(pd)
-			assert.InDelta(t, 20020719, a.perimeter, 1)
-			assert.True(t, math.IsNaN(a.area))
+			assert.InDelta(t, 20020719, a.Perimeter, 1)
+			assert.True(t, math.IsNaN(a.Area))
 		},
 	}
 
@@ -712,8 +712,8 @@ var (
 		logic: func(t *testing.T) {
 			points := [][]float64{{89, 0.1}, {89, 90.1}, {89, -179.9}}
 			a := planimeter(points)
-			assert.InDelta(t, 539297, a.perimeter, 1)
-			assert.InDelta(t, 12476152838.5, a.area, 1)
+			assert.InDelta(t, 539297, a.Perimeter, 1)
+			assert.InDelta(t, 12476152838.5, a.Area, 1)
 		},
 	}
 
@@ -723,23 +723,23 @@ var (
 		logic: func(t *testing.T) {
 			pa := [][]float64{{9, -0.00000000000001}, {9, 180}, {9, 0}}
 			a := planimeter(pa)
-			assert.InDelta(t, 36026861, a.perimeter, 1)
-			assert.InDelta(t, 0, a.area, 1)
+			assert.InDelta(t, 36026861, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
 
 			pb := [][]float64{{9, 0.00000000000001}, {9, 0}, {9, 180}}
 			a = planimeter(pb)
-			assert.InDelta(t, 36026861, a.perimeter, 1)
-			assert.InDelta(t, 0, a.area, 1)
+			assert.InDelta(t, 36026861, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
 
 			pc := [][]float64{{9, 0.00000000000001}, {9, 180}, {9, 0}}
 			a = planimeter(pc)
-			assert.InDelta(t, 36026861, a.perimeter, 1)
-			assert.InDelta(t, 0, a.area, 1)
+			assert.InDelta(t, 36026861, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
 
 			pd := [][]float64{{9, -0.00000000000001}, {9, 0}, {9, 180}}
 			a = planimeter(pd)
-			assert.InDelta(t, 36026861, a.perimeter, 1)
-			assert.InDelta(t, 0, a.area, 1)
+			assert.InDelta(t, 36026861, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
 		},
 	}
 
@@ -749,8 +749,8 @@ var (
 		logic: func(t *testing.T) {
 			points := [][]float64{{66.562222222, 0}, {66.562222222, 180}}
 			a := planimeter(points)
-			assert.InDelta(t, 10465729, a.perimeter, 1)
-			assert.InDelta(t, 0, a.area, 1)
+			assert.InDelta(t, 10465729, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
 		},
 	}
 
@@ -760,8 +760,8 @@ var (
 		logic: func(t *testing.T) {
 			points := [][]float64{{89, -360}, {89, -240}, {89, -120}, {89, 0}, {89, 120}, {89, 240}}
 			a := planimeter(points)
-			assert.InDelta(t, 1160741, a.perimeter, 1)
-			assert.InDelta(t, 32415230256.0, a.area, 1)
+			assert.InDelta(t, 1160741, a.Perimeter, 1)
+			assert.InDelta(t, 32415230256.0, a.Area, 1)
 		},
 	}
 
@@ -774,40 +774,40 @@ var (
 			r := 18454562325.45119
 			a0 := 510065621724088.5093 // ellipsoid area
 
-			polygon := newPolygonArea(WGS84, false)
+			polygon := NewPolygonArea(WGS84, false)
 			polygon.AddPoint(lat[0], lon[0])
 			polygon.AddPoint(lat[1], lon[1])
 
 			a := polygon.TestPoint(lat[2], lon[2], false, true)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.TestPoint(lat[2], lon[2], false, false)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.TestPoint(lat[2], lon[2], true, true)
-			assert.InDelta(t, -r, a.area, 0.5)
+			assert.InDelta(t, -r, a.Area, 0.5)
 			a = polygon.TestPoint(lat[2], lon[2], true, false)
-			assert.InDelta(t, a0-r, a.area, 0.5)
+			assert.InDelta(t, a0-r, a.Area, 0.5)
 
 			inv := WGS84.Inverse(lat[1], lon[1], lat[2], lon[2])
 
 			a = polygon.TestEdge(inv.Azi1, inv.S12, false, true)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.TestEdge(inv.Azi1, inv.S12, false, false)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.TestEdge(inv.Azi1, inv.S12, true, true)
-			assert.InDelta(t, -r, a.area, 0.5)
+			assert.InDelta(t, -r, a.Area, 0.5)
 			a = polygon.TestEdge(inv.Azi1, inv.S12, true, false)
-			assert.InDelta(t, a0-r, a.area, 0.5)
+			assert.InDelta(t, a0-r, a.Area, 0.5)
 
 			polygon.AddPoint(lat[2], lon[2])
 
 			a = polygon.Compute(false, true)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.Compute(false, false)
-			assert.InDelta(t, r, a.area, 0.5)
+			assert.InDelta(t, r, a.Area, 0.5)
 			a = polygon.Compute(true, true)
-			assert.InDelta(t, -r, a.area, 0.5)
+			assert.InDelta(t, -r, a.Area, 0.5)
 			a = polygon.Compute(true, false)
-			assert.InDelta(t, a0-r, a.area, 0.5)
+			assert.InDelta(t, a0-r, a.Area, 0.5)
 		},
 	}
 
@@ -815,36 +815,36 @@ var (
 		testNum:     19,
 		description: "Coverage tests, includes Planimeter19 - Planimeter20 (degenerate polygons) + extra cases.",
 		logic: func(t *testing.T) {
-			polygon := newPolygonArea(WGS84, false)
+			polygon := NewPolygonArea(WGS84, false)
 			a := polygon.Compute(false, true)
-			assert.True(t, a.area == 0)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Area == 0)
+			assert.True(t, a.Perimeter == 0)
 			a = polygon.TestPoint(1, 1, false, true)
-			assert.True(t, a.area == 0)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Area == 0)
+			assert.True(t, a.Perimeter == 0)
 			a = polygon.TestEdge(90, 1000, false, true)
-			assert.True(t, math.IsNaN(a.area))
-			assert.True(t, math.IsNaN(a.perimeter))
+			assert.True(t, math.IsNaN(a.Area))
+			assert.True(t, math.IsNaN(a.Perimeter))
 			polygon.AddPoint(1, 1)
 			a = polygon.Compute(false, true)
-			assert.True(t, a.area == 0)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Area == 0)
+			assert.True(t, a.Perimeter == 0)
 
-			polyline := newPolygonArea(WGS84, true)
+			polyline := NewPolygonArea(WGS84, true)
 			a = polyline.Compute(false, true)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Perimeter == 0)
 			a = polyline.TestPoint(1, 1, false, true)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Perimeter == 0)
 			a = polyline.TestEdge(90, 1000, false, true)
-			assert.True(t, math.IsNaN(a.perimeter))
+			assert.True(t, math.IsNaN(a.Perimeter))
 			polyline.AddPoint(1, 1)
 			a = polyline.Compute(false, true)
-			assert.True(t, a.perimeter == 0)
+			assert.True(t, a.Perimeter == 0)
 			polygon.AddPoint(1, 1)
 			a = polyline.TestEdge(90, 1000, false, true)
-			assert.InDelta(t, 1000, a.perimeter, 1e-10)
+			assert.InDelta(t, 1000, a.Perimeter, 1e-10)
 			a = polyline.TestPoint(2, 2, false, true)
-			assert.InDelta(t, 156876.149, a.perimeter, 0.5e-3)
+			assert.InDelta(t, 156876.149, a.Perimeter, 0.5e-3)
 		},
 	}
 
@@ -857,7 +857,7 @@ var (
 			s := 8420705.40957178156285
 			r := 39433884866571.4277   // Area for one circuit
 			a0 := 510065621724088.5093 // Ellipsoid area
-			polygon := newPolygonArea(WGS84, false)
+			polygon := NewPolygonArea(WGS84, false)
 			polygon.AddPoint(lat, 60)
 			polygon.AddPoint(lat, 180)
 			polygon.AddPoint(lat, -60)
@@ -869,30 +869,30 @@ var (
 				polygon.AddPoint(lat, 60)
 				polygon.AddPoint(lat, 180)
 				a := polygon.TestPoint(lat, -60, false, true)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.TestPoint(lat, -60, false, false)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.TestPoint(lat, -60, true, true)
-				assert.InDelta(t, -i*r, a.area, 0.5)
+				assert.InDelta(t, -i*r, a.Area, 0.5)
 				a = polygon.TestPoint(lat, -60, true, false)
-				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+				assert.InDelta(t, -i*r+a0, a.Area, 0.5)
 				a = polygon.TestEdge(azi, s, false, true)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.TestEdge(azi, s, false, false)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.TestEdge(azi, s, true, true)
-				assert.InDelta(t, -i*r, a.area, 0.5)
+				assert.InDelta(t, -i*r, a.Area, 0.5)
 				a = polygon.TestEdge(azi, s, true, false)
-				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+				assert.InDelta(t, -i*r+a0, a.Area, 0.5)
 				polygon.AddPoint(lat, -60)
 				a = polygon.Compute(false, true)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.Compute(false, false)
-				assert.InDelta(t, i*r, a.area, 0.5)
+				assert.InDelta(t, i*r, a.Area, 0.5)
 				a = polygon.Compute(true, true)
-				assert.InDelta(t, -i*r, a.area, 0.5)
+				assert.InDelta(t, -i*r, a.Area, 0.5)
 				a = polygon.Compute(true, false)
-				assert.InDelta(t, -i*r+a0, a.area, 0.5)
+				assert.InDelta(t, -i*r+a0, a.Area, 0.5)
 			}
 		},
 	}
@@ -901,14 +901,14 @@ var (
 		testNum:     29,
 		description: "Check fix to transitdirect vs transit zero handling inconsistency",
 		logic: func(t *testing.T) {
-			polygon := newPolygonArea(WGS84, false)
+			polygon := NewPolygonArea(WGS84, false)
 			polygon.AddPoint(0, 0)
 			polygon.AddEdge(90, 1000)
 			polygon.AddEdge(0, 1000)
 			polygon.AddEdge(-90, 1000)
 			a := polygon.Compute(false, true)
 			// The area should be 1e6. Prior to the fix it was 1e6 - A/2, where A = ellipsoid area.
-			assert.InDelta(t, 1000000.0, a.area, 0.01)
+			assert.InDelta(t, 1000000.0, a.Area, 0.01)
 		},
 	}
 )
