@@ -1,4 +1,4 @@
-package inverse
+package main
 
 import (
 	"bufio"
