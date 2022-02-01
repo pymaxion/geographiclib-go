@@ -13,15 +13,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	geodTestDatFilepathEnvVar = "GEODTEST_DAT_PATH"
-	tolerance                 = 5e-6
-)
+const geodTestDatFilepathEnvVar = "GEODTEST_DAT_PATH"
 
 func Test_GeodTest(t *testing.T) {
 	geodTestDatFilepath := os.Getenv(geodTestDatFilepathEnvVar)
 	if geodTestDatFilepath == "" {
-		t.Fatalf("'%s' environment variable not set", geodTestDatFilepathEnvVar)
+		t.Skipf("\n"+
+			"Skipped full GeodTest test suite because %s was not set. To run this test suite, perform the following steps:\n"+
+			"  1. Download GeodTest.dat.gz from https://sourceforge.net/projects/geographiclib/files/testdata/GeodTest.dat.gz\n"+
+			"  2. gunzip GeodTest.dat.gz to produce GeodTest.dat\n"+
+			"  3. Set the %s environment variable to the filepath of GeodTest.dat on your machine\n"+
+			"Once %s is set to a valid filepath, please rerun the tests.\n",
+			geodTestDatFilepathEnvVar, geodTestDatFilepathEnvVar, geodTestDatFilepathEnvVar)
 	}
 
 	f, err := os.Open(geodTestDatFilepath)
@@ -50,24 +53,42 @@ func Test_GeodTest(t *testing.T) {
 			t.Run("direct (from point 1)", func(t *testing.T) {
 				t.Parallel()
 				r := geodesic.WGS84.Direct(ps.lat1, ps.lon1, ps.azi1, ps.s12)
-				assert.InDelta(t, ps.lat2, r.Lat2, tolerance)
-				assert.InDelta(t, ps.lon2, r.Lon2, tolerance)
-				assert.InDelta(t, ps.azi2, r.Azi2, tolerance)
-				assert.InDelta(t, ps.a12, r.A12, tolerance)
+
+				assert.InDelta(t, ps.lat2, r.Lat2, 5e-6)
+				assert.InDelta(t, ps.lon2, r.Lon2, 5e-6)
+				assert.InDelta(t, ps.azi2, r.Azi2, 5e-6)
+				assert.InDelta(t, ps.a12, r.A12, 5e-6)
 			})
 
 			t.Run("direct (from point 2)", func(t *testing.T) {
 				t.Parallel()
 				r := geodesic.WGS84.Direct(ps.lat2, ps.lon2, ps.azi2, -ps.s12)
-				assert.InDelta(t, ps.lat1, r.Lat2, tolerance)
-				assert.InDelta(t, ps.lon1, r.Lon2, tolerance)
-				assert.InDelta(t, ps.azi1, r.Azi2, tolerance)
-				assert.InDelta(t, -ps.a12, r.A12, tolerance)
+
+				assert.InDelta(t, ps.lat1, r.Lat2, 5e-6)
+				assert.InDelta(t, ps.lon1, r.Lon2, 5e-6)
+				assert.InDelta(t, ps.azi1, r.Azi2, 5e-6)
+				assert.InDelta(t, -ps.a12, r.A12, 5e-6)
 			})
 
-			//t.Run("inverse", func(t *testing.T) {
-			//
-			//})
+			t.Run("inverse", func(t *testing.T) {
+				t.Parallel()
+				r := geodesic.WGS84.Inverse(ps.lat1, ps.lon1, ps.lat2, ps.lon2)
+
+				if ps.azi1 > 89.5 {
+					assert.InDelta(t, ps.azi1, r.Azi1, 0.02)
+				} else {
+					assert.InDelta(t, ps.azi1, r.Azi1, 1e-5)
+				}
+
+				if ps.azi2 > 89.5 {
+					assert.InDelta(t, ps.azi2, r.Azi2, 0.02)
+				} else {
+					assert.InDelta(t, ps.azi2, r.Azi2, 1e-5)
+				}
+
+				assert.InDelta(t, ps.s12, r.S12, 5e-6)
+				assert.InDelta(t, ps.a12, r.A12, 5e-6)
+			})
 		})
 	}
 
