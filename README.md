@@ -26,7 +26,7 @@ More information about the GeographicLib project can be found at https://geograp
 
 # Geodesics on an Ellipsoid
 ## Introduction
-Consider a ellipsoid of revolution with equatorial radius a, polar semi-axis b, and flattening f = (a − b)/a . Points on the surface of the ellipsoid are characterized by their latitude φ and longitude λ. (Note that latitude here means the geographical latitude, the angle between the normal to the ellipsoid and the equatorial plane).
+Consider a ellipsoid of revolution with equatorial radius <img src="https://render.githubusercontent.com/render/math?math=a"/>, polar semi-axis <img src="https://render.githubusercontent.com/render/math?math=b"/>, and flattening <img src="https://render.githubusercontent.com/render/math?math=f = \\frac{a − b}{a}"/>. Points on the surface of the ellipsoid are characterized by their latitude <img src="https://render.githubusercontent.com/render/math?math=φ"/> and longitude <img src="https://render.githubusercontent.com/render/math?math=λ"/>. (Note that latitude here means the geographical latitude, the angle between the normal to the ellipsoid and the equatorial plane).
 
 The shortest path between two points on the ellipsoid at (φ1, λ1) and (φ2, λ2) is called the geodesic. Its length is s12 and the geodesic from point 1 to point 2 has forward azimuths α1 and α2 at the two end points. In this figure, we have λ12 = λ2 − λ1.
 
