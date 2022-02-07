@@ -4,23 +4,28 @@
 # Description
 This is a Go implementation of the geodesic algorithms from Charles F. F. Karney's [GeographicLib](https://geographiclib.sourceforge.io/). Though not an official implementation of GeographicLib, geographiclib-go has feature parity with the officially-maintained [Java](https://geographiclib.sourceforge.io/html/java/) and [Python](https://geographiclib.sourceforge.io/html/python/) implementations and additionally includes a utility to validate the implementation against the official 500k-line [GeodTest.dat](https://geographiclib.sourceforge.io/html/geodesic.html#testgeod) repository of geodesic test data.
 
-More information about the GeographicLib project can be found at https://geographiclib.sourceforge.io. This README lifts heavily from GeographicLib's excellent project documentation, especially the section [Geodesics on an Ellipsoid](#geodesics-on-an-ellipsoid), which copies Karney's documentation verbatim to introduce the direct and inverse geodesic problems.
+More information about the GeographicLib project can be found at https://geographiclib.sourceforge.io. This README lifts heavily from GeographicLib's excellent project documentation, especially the section [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid), which copies Karney's documentation verbatim to introduce the direct and inverse geodesic problems.
            
 # Contents
 1. [Setup](#setup)
    1. [Installation](#installation)
    1. [Testing](#testing)
-1. [Geodesics on an Ellipsoid](#geodesics-on-an-ellipsoid)
+1. [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid)
    1. [Introduction](#introduction)
    1. [Additional properties](#additional-properties)
    1. [Multiple shortest geodesics](#multiple-shortest-geodesics)
    1. [Background](#background)
-   1. [References](#references)
+1. [The library interface](#the-library-interface)
+   1. [Units](#units)
+   1. [`geodesic.Data`](#geodesicdata)
+   1. [`capabilities.Mask`](#capabilitiesmask)
+   1. [Restrictions on the parameters](#restrictions-on-the-parameters)
 1. [Examples](#examples)
    1. [Initializing](#initializing)
    1. [Basic geodesic calculations](#basic-geodesic-calculations)
    1. [Computing waypoints](#computing-waypoints)
    1. [Measuring areas](#measuring-areas)
+1. [References](#references)
 
 # Setup
 ## Installation
@@ -29,7 +34,7 @@ More information about the GeographicLib project can be found at https://geograp
 ## Testing
 < TODO >
 
-# Geodesics on an Ellipsoid
+# Geodesics on an ellipsoid
 ## Introduction
 Consider a ellipsoid of revolution with equatorial radius $a$, polar semi-axis $b$, and flattening $f=\frac{a−b}{a}$. Points on the surface of the ellipsoid are characterized by their latitude $\varphi$ and longitude $\lambda$. (Note that latitude here means the *geographical latitude*, the angle between the normal to the ellipsoid and the equatorial plane).
 
@@ -76,15 +81,72 @@ The algorithms implemented by this package are given in Karney (2013) and are ba
 * The solution of the inverse problem is always found. (Vincenty’s method fails to converge for nearly antipodal points.)
 * The routines calculate differential and integral properties of a geodesic. This allows, for example, the area of a geodesic polygon to be computed.
 
-## References
-* F. W. Bessel, [The calculation of longitude and latitude from geodesic measurements (1825)](https://arxiv.org/abs/0908.1824), Astron. Nachr. 331(8), 852–861 (2010), translated by C. F. F. Karney and R. E. Deakin.
-* F. R. Helmert, [Mathematical and Physical Theories of Higher Geodesy, Vol 1](https://doi.org/10.5281/zenodo.32050), (Teubner, Leipzig, 1880), Chaps. 5–7.
-* T. Vincenty, [Direct and inverse solutions of geodesics on the ellipsoid with application of nested equations](http://www.ngs.noaa.gov/PUBS_LIB/inverse.pdf), Survey Review 23(176), 88–93 (1975).
-* J. Danielsen, [The area under the geodesic](https://doi.org/10.1179/003962689791474267), Survey Review 30(232), 61–66 (1989).
-* C. F. F. Karney, [Algorithms for geodesics](https://doi.org/10.1007/s00190-012-0578-z), J. Geodesy 87(1) 43–55 (2013); [addenda](https://geographiclib.sourceforge.io/geod-addenda.html).
-* C. F. F. Karney, [Geodesics on an ellipsoid of revolution](https://arxiv.org/abs/1102.1215v1), Feb. 2011; [errata](https://geographiclib.sourceforge.io/geod-addenda.html#geod-errata).
-* [A geodesic bibliography](https://geographiclib.sourceforge.io/geodesic-papers/biblio.html).
-* The wikipedia page, [Geodesics on an ellipsoid](https://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid).
+# The library interface
+## Units
+All angles (latitude, longitude, azimuth, arc length) are measured in degrees with latitudes increasing northwards, longitudes increasing eastwards, and azimuths measured clockwise from north. For a point at a pole, the azimuth is defined by keeping the longitude fixed, writing $\varphi=\pm(90^{\circ}−\epsilon)$, and taking the limit $\epsilon\rightarrow0+$.
+
+## `geodesic.Data`
+The results returned by `Geodesic.Direct()`, `Geodesic.Inverse()`, `Line.Position()`, etc., return a struct type (`geodesic.Data`) with some of the following 12 fields set:
+
+* `Lat1` = $\varphi_1$, latitude of point 1 (degrees)
+* `Lon1` = $\lambda_1$, longitude of point 1 (degrees)
+* `Azi1` = $\alpha_1$, azimuth of line at point 1 (degrees)
+* `Lat2` = $\varphi_2$, latitude of point 2 (degrees)
+* `Lon2` = $\lambda_2$, longitude of point 2 (degrees)
+* `Azi2` = $\alpha_2$, (forward) azimuth of line at point 2 (degrees)
+* `S12` = $s_{12}$, distance from 1 to 2 (meters)
+* `A12` = $\sigma_{12}$, arc length on auxiliary sphere from 1 to 2 (degrees)
+* `M12Reduced` = $m_{12}$, reduced length of geodesic (meters)
+* `M12` = $M_{12}$, geodesic scale at 2 relative to 1 (dimensionless)
+* `M21` = $M_{21}$, geodesic scale at 1 relative to 2 (dimensionless)
+* `S12Area` = $S_{12}$, area between geodesic and equator (meters$^2$)
+
+**Note**: because of Go's use of capitalization to denote exported symbols, the names of a few of these fields do not exactly match their symbolic representations. For example, it is not possible to distinguish between $s_{12}$ and $S_{12}$ using lowercase vs. capitalized field names as is possible in other languages' implementations of GeographicLib; $s_{12}$ *must* be capitalized to be accessible from other packages. Thus, where necessary to remove ambiguity, suffixes have been added to the less-commonly-used field names (e.g., $s_{12}\rightarrow$`S12`, $S_{12}\rightarrow$`S12Area`).
+
+## `capabilities.Mask`
+The standard geodesic functions (`Geodesic.Direct()`, `Geodesic.Inverse()`, etc.) all return the 7 basic quantities: `Lat1`, `Lon1`, `Azi1`, `Lat2`, `Lon2`, `Azi2`, `S12`, together with the arc length `A12`. However, each function has a counterpart `<Function>WithCapabilities()` requiring an additional parameter of type `capabilities.Mask`; this additional parameter is used to tailor which quantities to calculate. In addition, when a `Line` is instantiated, it too can be provided with a `capabilities.Mask` parameter specifying what quantities can be returned from the resulting instance.
+
+A custom `capabilities.Mask` parameter can be created by bitwise-or(`|`)’ing together any of the following values:
+
+* `None` = no capabilities, no output
+* `Latitude` = compute latitude, `Lat2`
+* `Longitude` = compute longitude, `Lon2`
+* `Azimuth` = compute azimuths, `Azi1` and `Azi2`
+* `Distance` = compute distance, `S12`
+* `Standard` = all of the above
+* `DistanceIn` = allow `S12` to be used as input in the direct problem
+* `ReducedLength` = compute reduced length, `M12Reduced`
+* `GeodesicScale` = compute geodesic scales, `M12` and `M21`
+* `Area` = compute area, `S12Area`
+* `All` = all of the above
+* `LongUnroll` = unroll longitudes
+
+`DistanceIn` is a capability provided when instantiating a `Line`. It allows the position on the line to specified in terms of distance. (Without this, the position can only be specified in terms of the arc length.)
+
+`LongUnroll` controls the treatment of longitude. If it is not set then the `Lon1` and `Lon2` fields are both reduced to the range [−180°, 180°). If it is set, then `Lon1` is as given in the function call and (`Lon2` − `Lon1`) determines how many times and in what sense the geodesic has encircled the ellipsoid.
+
+**Note**: The standard geodesic functions (`Geodesic.Direct()`, `Geodesic.Inverse()`, etc.) are exactly equivalent to calling their counterpart `<Function>WithCapabilities()` with an argument of  `Standard`. Note also that `A12` is always included in the result.
+
+## Restrictions on the parameters
+* Latitudes must lie in [−90°, 90°]. Latitudes outside this range are replaced by NaNs.
+* The distance `S12` is unrestricted. This allows geodesics to wrap around the ellipsoid. Such geodesics are no longer shortest paths; however, they retain the property that they are the straightest curves on the surface.
+* Similarly, the spherical arc length `A12` is unrestricted.
+* Longitudes and azimuths are unrestricted; internally these are exactly reduced to the range [−180°, 180°), but see also the `LongUnroll` capability.
+* The equatorial radius $a$ and the polar semi-axis $b$ must both be positive and finite (this implies that $−\infty<f<1$).
+* The flattening $f$ should satisfy $f\in[-\frac{1}{50},\frac{1}{50}]$ in order to retain full accuracy. This condition holds for most applications in geodesy.
+
+Reasonably accurate results can be obtained for $−0.2\le f\le0.2$. Here is a table of the approximate maximum error (expressed as a distance) for an ellipsoid with the same equatorial radius as the WGS84 ellipsoid and different values of the flattening.
+
+|abs(f)|error|
+|---|---|
+|0.003|15 nm|
+|0.01|25 nm|
+|0.02|30 nm|
+|0.05|10 μm|
+|0.1|1.5 mm|
+|0.2|300 mm|
+
+Here 1 nm = 1 nanometer = $10^{−9}$ m (not 1 nautical mile!)
 
 # Examples
 ## Initializing
@@ -212,7 +274,17 @@ antarctica := [][]float64{
 for _, pnt := range antarctica {
   p.AddPoint(pnt[0], pnt[1])
 }
-r := p.Compute(false, false)
+r := p.Compute(false, true)
 fmt.Printf("Perimeter/area of Antarctica are %.3f m / %.1f m^2.\n", r.Perimeter, r.Area)
 // Prints: "Perimeter/area of Antarctica are 16831067.893 m / 13662703680020.1 m^2."
 ```
+
+# References
+* F. W. Bessel, [The calculation of longitude and latitude from geodesic measurements (1825)](https://arxiv.org/abs/0908.1824), Astron. Nachr. 331(8), 852–861 (2010), translated by C. F. F. Karney and R. E. Deakin.
+* F. R. Helmert, [Mathematical and Physical Theories of Higher Geodesy, Vol 1](https://doi.org/10.5281/zenodo.32050), (Teubner, Leipzig, 1880), Chaps. 5–7.
+* T. Vincenty, [Direct and inverse solutions of geodesics on the ellipsoid with application of nested equations](http://www.ngs.noaa.gov/PUBS_LIB/inverse.pdf), Survey Review 23(176), 88–93 (1975).
+* J. Danielsen, [The area under the geodesic](https://doi.org/10.1179/003962689791474267), Survey Review 30(232), 61–66 (1989).
+* C. F. F. Karney, [Algorithms for geodesics](https://doi.org/10.1007/s00190-012-0578-z), J. Geodesy 87(1) 43–55 (2013); [addenda](https://geographiclib.sourceforge.io/geod-addenda.html).
+* C. F. F. Karney, [Geodesics on an ellipsoid of revolution](https://arxiv.org/abs/1102.1215v1), Feb. 2011; [errata](https://geographiclib.sourceforge.io/geod-addenda.html#geod-errata).
+* [A geodesic bibliography](https://geographiclib.sourceforge.io/geodesic-papers/biblio.html).
+* The wikipedia page, [Geodesics on an ellipsoid](https://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid).

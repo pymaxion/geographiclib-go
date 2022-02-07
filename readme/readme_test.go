@@ -103,7 +103,7 @@ func TestAreaOfAntarctica(t *testing.T) {
 	for _, pnt := range antarctica {
 		p.AddPoint(pnt[0], pnt[1])
 	}
-	r := p.Compute(false, false)
+	r := p.Compute(false, true)
 	fmt.Printf("Perimeter/area of Antarctica are %.3f m / %.1f m^2.\n", r.Perimeter, r.Area)
 
 	assert.InDelta(t, 16831067.893, r.Perimeter, 1e-3)
