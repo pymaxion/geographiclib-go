@@ -1,4 +1,4 @@
-module geographiclib-go
+module github.com/pymxion/geographiclib-go
 
 go 1.17
 
