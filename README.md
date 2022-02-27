@@ -1,15 +1,15 @@
 # geographiclib-go
 ### A Go port of [GeographicLib](https://geographiclib.sourceforge.io/)
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go)
+
 # Description
 This is a Go implementation of the geodesic algorithms from Charles F. F. Karney's [GeographicLib](https://geographiclib.sourceforge.io/). Though not an official implementation of GeographicLib, geographiclib-go has feature parity with the officially-maintained [Java](https://geographiclib.sourceforge.io/html/java/) and [Python](https://geographiclib.sourceforge.io/html/python/) implementations and additionally includes a utility to validate the implementation against the official 500k-line [GeodTest.dat](https://geographiclib.sourceforge.io/html/geodesic.html#testgeod) repository of geodesic test data.
 
 More information about the GeographicLib project can be found at https://geographiclib.sourceforge.io. This README lifts heavily from GeographicLib's excellent project documentation, especially the section [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid), which copies Karney's documentation verbatim to introduce the direct and inverse geodesic problems.
            
 # Contents
-1. [Setup](#setup)
-   1. [Installation](#installation)
-   1. [Testing](#testing)
+1. [Getting started](#getting-started)
 1. [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid)
    1. [Introduction](#introduction)
    1. [Additional properties](#additional-properties)
@@ -27,12 +27,10 @@ More information about the GeographicLib project can be found at https://geograp
    1. [Measuring areas](#measuring-areas)
 1. [References](#references)
 
-# Setup
-## Installation
-< TODO >
+# Getting started
+`$ go get github.com/pymaxion/geographiclib-go`
 
-## Testing
-< TODO >
+See the `examples` directory for some basic code samples.
 
 # Geodesics on an ellipsoid
 ## Introduction
