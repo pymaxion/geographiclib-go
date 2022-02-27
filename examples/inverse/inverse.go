@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"geographiclib-go/examples/util"
-	"geographiclib-go/geodesic"
+	"github.com/pymaxion/geographiclib-go/examples/util"
+	"github.com/pymaxion/geographiclib-go/geodesic"
 )
 
 func main() {

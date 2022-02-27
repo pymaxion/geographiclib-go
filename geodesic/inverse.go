@@ -3,7 +3,7 @@ package geodesic
 import (
 	"math"
 
-	"geographiclib-go/geodesic/capabilities"
+	"github.com/pymaxion/geographiclib-go/geodesic/capabilities"
 )
 
 type inverseSolver struct {

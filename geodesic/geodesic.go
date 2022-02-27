@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"geographiclib-go/geodesic/capabilities"
+	"github.com/pymaxion/geographiclib-go/geodesic/capabilities"
 )
 
 /*

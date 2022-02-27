@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"geographiclib-go/geodesic"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/pymaxion/geographiclib-go/geodesic"
 
 	"github.com/stretchr/testify/assert"
 )
