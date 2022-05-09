@@ -1,5 +1,7 @@
 package geodesic
 
+import "math"
+
 // accumulator is an accumulator for sums.
 //
 // This allow many double precision numbers to be added together with twice the
@@ -90,6 +92,6 @@ func (a *accumulator) negate() {
 
 // remainder calculates the remainder of the sum on division by y
 func (a *accumulator) remainder(y float64) {
-	a.s = remainder(a.s, y)
+	a.s = math.Remainder(a.s, y)
 	a.add(0) // renormalize
 }

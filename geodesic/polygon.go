@@ -320,7 +320,7 @@ func areaReduceA(area *accumulator, area0 float64, crossings int, reverse, sign 
 }
 
 func areaReduceB(area, area0 float64, crossings int, reverse, sign bool) float64 {
-	area = remainder(area, area0)
+	area = math.Remainder(area, area0)
 	if (crossings & 1) != 0 {
 		area += ternary(area < 0, 1, -1) * area0 / 2
 	}

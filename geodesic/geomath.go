@@ -76,7 +76,10 @@ func sum(u, v float64) (float64, float64) {
 	vpp := s - up
 	up -= u
 	vpp -= v
-	t := -(up + vpp)
+	t := s
+	if s != 0 {
+		t = 0 - (up + vpp)
+	}
 	return s, t
 }
 
@@ -116,34 +119,16 @@ func angRound(x float64) float64 {
 	if y < z {
 		y = z - (z - y)
 	}
-	if x < 0 {
-		return -y
-	} else {
-		return y
-	}
-}
-
-// remainder calculates the remainder of x/y in the range [-y/2, y/2]. The range
-// of x is unrestricted, but y must be positive.
-func remainder(x, y float64) float64 {
-	x = math.Mod(x, y)
-	if x < -y/2 {
-		return x + y
-	} else if x < y/2 {
-		return x
-	} else {
-		return x - y
-	}
+	return math.Copysign(y, x)
 }
 
 // angNormalize normalizes an angle in degrees to the range [-180, 180)
 func angNormalize(x float64) float64 {
-	x = remainder(x, 360)
-	if x == -180 {
-		return 180
-	} else {
-		return x
+	y := math.Remainder(x, 360)
+	if math.Abs(y) == 180 {
+		return math.Copysign(180, x)
 	}
+	return y
 }
 
 // latFix replaces latitudes outside the range [-90, 90] by math.NaN
@@ -156,18 +141,20 @@ func latFix(x float64) float64 {
 }
 
 // angDiff calculates the exact difference of two angles in degrees, reduced to
-// (-180, 180]. More specifically, this function z = y - x exactly, reduced to
-// (-180, 180], and then sets z = d + e where d is the nearest representable
-// number to z and e is the truncation error. If d = -180, then e > 0; if d =
-// 180, then e <= 0.
+// [-180, 180]. More specifically, this function computes z = y - x exactly,
+// reduced to [-180, 180], and then sets z = d + e where d is the nearest
+// representable number to z and e is the truncation error. If z = ±0° or ±180°,
+// then the sign of d is given by the sign of y - x. The maximum absolute value
+// of e is 2^-26.
 func angDiff(x, y float64) (float64, float64) {
-	d, t := sum(angNormalize(-x), angNormalize(y))
-	d = angNormalize(d)
-	if d == 180 && t > 0 {
-		return sum(-180, t)
-	} else {
-		return sum(d, t)
+	t1, t2 := sum(math.Remainder(-x, 360), math.Remainder(y, 360))
+	d, e := sum(math.Remainder(t1, 360), t2)
+	if d == 0 || math.Abs(d) == 180 {
+		// If e == 0, take sign from y - x
+		// else (e != 0, implies d = +/-180), d and e must have opposite signs
+		d = math.Copysign(d, ternary(e == 0, y-x, -e))
 	}
+	return d, e
 }
 
 // deg2rad converts degrees to radians
@@ -184,8 +171,8 @@ func rad2deg(r float64) float64 {
 // exactly the elementary properties of the trigonometric functions, e.g., sin 9
 // = cos 81 = - sin 123456789.
 func sincosd(x float64) (float64, float64) {
-	// In order to minimize round-off errors, this function exactly reduces the argument to the
-	//  range [-45, 45] before converting it to radians.
+	// In order to minimize round-off errors, this function exactly reduces the
+	// argument to the range [-45, 45] before converting it to radians.
 	r := math.Mod(x, 360)
 	var q int
 	if math.IsNaN(r) {
@@ -212,18 +199,58 @@ func sincosd(x float64) (float64, float64) {
 		sinx, cosx = -c, s
 	}
 
-	// remove the minus sign on -0.0 except for sin(-0.0).
-	if x != 0 {
-		sinx += 0
-		cosx += 0
+	if sinx == 0 {
+		sinx = math.Copysign(sinx, x)
 	}
-	return sinx, cosx
+	return sinx, 0 + cosx
+}
+
+// sincosde evaluates the sine and cosine function in degrees with reduced
+// arguments, plus a correction specified in degrees. This is a variant of
+// sincosd allowing a correction to the angle to be supplied. x must be in
+// [-180°, 180°] and t is assumed to be a *small* correction. angRound is applied
+// to the reduced angle to prevent problems with x + t being extremely close, but
+// not exactly equal, to one of the four cardinal directions.
+func sincosde(x, t float64) (float64, float64) {
+	// In order to minimize round-off errors, this function exactly reduces the
+	// argument to the range [-45, 45] before converting it to radians.
+	var q int
+	if math.IsNaN(x) {
+		q = 0
+	} else {
+		q = int(math.Round(x / 90))
+	}
+	r := x - 90*float64(q)
+
+	// now abs(r) <= 45
+	r = deg2rad(angRound(r + t))
+	s, c := math.Sincos(r)
+
+	var sinx, cosx float64
+	switch q & 3 {
+	case 0:
+		sinx, cosx = s, c
+		break
+	case 1:
+		sinx, cosx = c, -s
+		break
+	case 2:
+		sinx, cosx = -s, -c
+		break
+	default: // case 3
+		sinx, cosx = -c, s
+	}
+
+	if sinx == 0 {
+		sinx = math.Copysign(sinx, x)
+	}
+	return sinx, 0 + cosx
+
 }
 
 // atan2d calculates atan2(y, x) with the result in degrees where y = the sine of
-// the angle and x = the cosine of the angle. The result is in the range (-180
-// 180]. N.B., atan2d(±0, -1) = +180; atan2d(-ε, -1) = -180, for ε positive and
-// tiny; atan2d(±0, 1) = ±0.
+// the angle and x = the cosine of the angle. The result is in the range [-180
+// 180]. N.B., atan2d(±0, -1) = +180.
 func atan2d(y, x float64) float64 {
 	// In order to minimize round-off errors, this function rearranges the arguments
 	// so that result of atan2 is in the range [-pi/4, pi/4] before converting it to
@@ -246,11 +273,7 @@ func atan2d(y, x float64) float64 {
 	//
 	// and handle mpfr as in AngRound.
 	case 1:
-		if y >= 0 {
-			ang = 180 - ang
-		} else {
-			ang = -180 - ang
-		}
+		ang = math.Copysign(180, y) - ang
 		break
 	case 2:
 		ang = 90 - ang
@@ -266,7 +289,7 @@ func atan2d(y, x float64) float64 {
 
 // isfinite tests if x is finite
 func isfinite(x float64) bool {
-	return math.Abs(x) <= math.MaxFloat64
+	return !math.IsNaN(x) && !math.IsInf(x, 0)
 }
 
 // min returns the minimum of two ints
