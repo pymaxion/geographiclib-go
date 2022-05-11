@@ -110,9 +110,6 @@ func polyval(n int, p []float64, s int, x float64) float64 {
 // singular cases when x is non-zero but tiny (e.g., 1.0e-200). Note that tiny
 // negative numbers get converted to -0.
 func angRound(x float64) float64 {
-	if x == 0 {
-		return 0
-	}
 	const z = 1 / 16.
 	y := math.Abs(x)
 	// The compiler mustn't "simplify" z - (z - y) to y
