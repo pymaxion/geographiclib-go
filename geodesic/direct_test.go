@@ -40,6 +40,27 @@ func TestDirect(t *testing.T) {
 	} {
 		t.Run(testCase.String(), testCase.logic)
 	}
+
+	t.Run("azimuths = +/-0 and +/-180 for the direct problem", func(t *testing.T) {
+		testCases := []struct {
+			azi1 float64
+			lon2 float64
+			azi2 float64
+		}{
+			{0, +180, +180},
+			{minusZero, -180, -180},
+			{+180, +180, 0},
+			{-180, -180, minusZero},
+		}
+
+		for _, tt := range testCases {
+			t.Run(fmt.Sprintf("azi1: %.3f", tt.azi1), func(t *testing.T) {
+				r := WGS84.DirectWithCapabilities(0, 0, tt.azi1, 15e6, capabilities.Standard|capabilities.LongUnroll)
+				assert.True(t, equiv(tt.lon2, r.Lon2))
+				assert.True(t, equiv(tt.azi2, r.Azi2))
+			})
+		}
+	})
 }
 
 func TestArcDirect(t *testing.T) {
