@@ -62,7 +62,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 
 	// Swap points so that point with higher (abs) latitude is point 1
 	// If one latitude is a nan, then it becomes lat1.
-	swapp := ternary(math.Abs(lat1) < math.Abs(lat2), -1, 1)
+	swapp := ternary(math.Abs(lat1) < math.Abs(lat2) || lat2 != lat2, -1, 1)
 	if swapp < 0 {
 		lonSign *= -1
 		lat1, lat2 = lat2, lat1

@@ -47,6 +47,8 @@ func TestInverse(t *testing.T) {
 		geodSolve78,
 		geodSolve80,
 		geodSolve92,
+		geodSolve94,
+		geodSolve96,
 	} {
 		t.Run(testCase.String(), testCase.logic)
 	}
