@@ -175,8 +175,9 @@ var (
 	}
 
 	geodSolve6 = geodSolve{
-		testNum:     6,
-		description: "Check fix for volatile sbet12a bug found 2011-06-25 (gcc 4.4.4 x86-O3). Found again on 2012-03-27 with tdm-mingw32 (g++ 4.6.1).",
+		testNum: 6,
+		description: "Check fix for volatile sbet12a bug found 2011-06-25 (gcc 4.4.4 x86-O3). Found again on " +
+			"2012-03-27 with tdm-mingw32 (g++ 4.6.1).",
 		logic: func(t *testing.T) {
 			r := WGS84.Inverse(88.202499451857, 0, -88.202499451857, 179.981022032992859592)
 			assert.InDelta(t, 20003898.214, r.S12, 0.5e-3)
@@ -217,8 +218,9 @@ var (
 	}
 
 	geodSolve12 = geodSolve{
-		testNum:     12,
-		description: "Check fix for inverse geodesics on extreme prolate/oblate ellipsoids. Reported 2012-08-29 Stefan Guenther <stefan.gunther@embl.de>; fixed 2012-10-07",
+		testNum: 12,
+		description: "Check fix for inverse geodesics on extreme prolate/oblate ellipsoids. Reported 2012-08-29 " +
+			"Stefan Guenther <stefan.gunther@embl.de>; fixed 2012-10-07",
 		logic: func(t *testing.T) {
 			geod, err := NewGeodesic(89.8, -1.83)
 			require.Nil(t, err)
@@ -321,8 +323,9 @@ var (
 	}
 
 	geodSolve33 = geodSolve{
-		testNum:     33,
-		description: "Check max(-0.0,+0.0) issues 2015-08-22 (triggered by bugs in Octave -- sind(-0.0) = +0.0 -- and in some version of Visual Studio -- fmod(-0.0, 360.0) = +0.0)",
+		testNum: 33,
+		description: "Check max(-0.0,+0.0) issues 2015-08-22 (triggered by bugs in Octave -- sind(-0.0) = +0.0 -- and " +
+			"in some version of Visual Studio -- fmod(-0.0, 360.0) = +0.0)",
 		logic: func(t *testing.T) {
 			r := WGS84.Inverse(0, 0, 0, 179)
 			assert.InDelta(t, 90.00000, r.Azi1, 0.5e-5)
@@ -432,8 +435,9 @@ var (
 	}
 
 	geodSolve65 = geodSolve{
-		testNum:     65,
-		description: "Check for bug in east-going check in GeodesicLine (needed to check for sign of 0) and sign error in area calculation due to a bogus override of the code for alp12.  Found/fixed on 2015-12-19.",
+		testNum: 65,
+		description: "Check for bug in east-going check in GeodesicLine (needed to check for sign of 0) and sign error " +
+			"in area calculation due to a bogus override of the code for alp12. Found/fixed on 2015-12-19.",
 		logic: func(t *testing.T) {
 			l := WGS84.InverseLine(30, -0.000000000000000001, -31, 180)
 			r := l.PositionWithCapabilities(1e7, capabilities.All|capabilities.LongUnroll)
@@ -496,8 +500,10 @@ var (
 	}
 
 	geodSolve73 = geodSolve{
-		testNum:     73,
-		description: "Check for backwards from the pole bug reported by Anon on 2016-02-13. This only affected the Java implementation. It was introduced in Java version 1.44 and fixed in 1.46-SNAPSHOT on 2016-01-17. Also the + sign on azi2 is a check on the normalizing of azimuths (converting -0.0 to +0.0).",
+		testNum: 73,
+		description: "Check for backwards from the pole bug reported by Anon on 2016-02-13. This only affected the " +
+			"Java implementation. It was introduced in Java version 1.44 and fixed in 1.46-SNAPSHOT on 2016-01-17. " +
+			"Also the + sign on azi2 is a check on the normalizing of azimuths (converting -0.0 to +0.0).",
 		logic: func(t *testing.T) {
 			r := WGS84.Direct(90, 10, 180, -1e6)
 			assert.InDelta(t, 81.04623, r.Lat2, 0.5e-5)
@@ -547,8 +553,9 @@ var (
 	}
 
 	geodSolve80 = geodSolve{
-		testNum:     80,
-		description: "Some tests to add code coverage: computing scale in special cases + zero length geodesic (includes GeodSolve80 - GeodSolve83).",
+		testNum: 80,
+		description: "Some tests to add code coverage: computing scale in special cases + zero length geodesic " +
+			"(includes GeodSolve80 - GeodSolve83).",
 		logic: func(t *testing.T) {
 			r := WGS84.InverseWithCapabilities(0, 0, 0, 90, capabilities.GeodesicScale)
 			assert.InDelta(t, -0.00528427534, r.M12, 0.5e-10)
@@ -589,8 +596,9 @@ var (
 	}
 
 	geodSolve84 = geodSolve{
-		testNum:     84,
-		description: "Tests for python implementation to check fix for range errors with {fmod,sin,cos}(inf) (includes GeodSolve84 - GeodSolve91).",
+		testNum: 84,
+		description: "Tests for python implementation to check fix for range errors with {fmod,sin,cos}(inf) " +
+			"(includes GeodSolve84 - GeodSolve91).",
 		logic: func(t *testing.T) {
 			r := WGS84.Direct(0, 0, 90, math.Inf(1))
 			assert.True(t, math.IsNaN(r.Lat2))
@@ -635,13 +643,37 @@ var (
 	}
 
 	geodSolve92 = geodSolve{
-		testNum:     92,
-		description: "Check fix for inaccurate hypot with python 3.[89]. Problem reported by agdhruv https://github.com/geopy/geopy/issues/466; see https://bugs.python.org/issue43088",
+		testNum: 92,
+		description: "Check fix for inaccurate hypot with python 3.[89]. Problem reported by agdhruv " +
+			"https://github.com/geopy/geopy/issues/466; see https://bugs.python.org/issue43088",
 		logic: func(t *testing.T) {
 			r := WGS84.Inverse(37.757540000000006, -122.47018, 37.75754, -122.470177)
 			assert.InDelta(t, 89.99999923, r.Azi1, 1e-7)
 			assert.InDelta(t, 90.00000106, r.Azi2, 1e-7)
 			assert.InDelta(t, 0.264, r.S12, 0.5e-3)
+		},
+	}
+
+	geodSolve94 = geodSolve{
+		testNum:     94,
+		description: "Check fix for lat2 = nan being treated as lat2 = 0 (bug found 2021-07-26)",
+		logic: func(t *testing.T) {
+			r := WGS84.Inverse(0, 0, math.NaN(), 90)
+			assert.True(t, math.IsNaN(r.Azi1))
+			assert.True(t, math.IsNaN(r.Azi2))
+			assert.True(t, math.IsNaN(r.S12))
+		},
+	}
+
+	geodSolve96 = geodSolve{
+		testNum: 96,
+		description: "Failure with long doubles found with test case from Nowak + Nowak Da Costa (2022).  Problem was " +
+			"using somg12 > 1 as a test that it needed to be set when roundoff could result in somg12 slightly bigger " +
+			"than 1. Found + fixed 2022-03-30.",
+		logic: func(t *testing.T) {
+			g, _ := NewGeodesic(6378137, 1/298.257222101)
+			r := g.InverseWithCapabilities(0, 0, 60.0832522871723, 89.8492185074635, capabilities.Area)
+			assert.InDelta(t, 42426932221845, r.S12Area, 0.5)
 		},
 	}
 )
@@ -754,6 +786,18 @@ var (
 		},
 	}
 
+	planimeter12r = planimeterTest{
+		testNum:     12,
+		description: "Reverse area of arctic circle",
+		logic: func(t *testing.T) {
+			minusZero := math.Copysign(0, -1)
+			points := [][]float64{{66.562222222, minusZero}, {66.562222222, -180}, {66.562222222, -360}}
+			a := planimeter(points)
+			assert.InDelta(t, 10465729, a.Perimeter, 1)
+			assert.InDelta(t, 0, a.Area, 1)
+		},
+	}
+
 	planimeter13 = planimeterTest{
 		testNum:     13,
 		description: "Check encircling pole twice",
@@ -849,8 +893,9 @@ var (
 	}
 
 	planimeter21 = planimeterTest{
-		testNum:     21,
-		description: "Some test to add code coverage: multiple circlings of pole (includes Planimeter21 - Planimeter28) + invocations via testpoint and testedge.",
+		testNum: 21,
+		description: "Some tests to add code coverage: multiple circlings of pole (includes Planimeter21 - " +
+			"Planimeter28) + invocations via testpoint and testedge.",
 		logic: func(t *testing.T) {
 			lat := 45.
 			azi := 39.2144607176828184218

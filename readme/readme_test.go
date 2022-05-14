@@ -13,14 +13,14 @@ import (
 
 func TestWellingtonToSalamanca(t *testing.T) {
 	r := geodesic.WGS84.Inverse(-41.32, 174.81, 40.96, -5.50)
-	fmt.Printf("The distance is %.3f m.\n", r.S12)
+	//fmt.Printf("The distance is %.3f m.\n", r.S12)
 
 	assert.InDelta(t, 19959679.267, r.S12, 1e-3)
 }
 
 func TestPointSouthwestOfPerth(t *testing.T) {
 	r := geodesic.WGS84.Direct(-32.06, 115.74, 225, 20000e3)
-	fmt.Printf("The position is (%.8f, %.8f).\n", r.Lat2, r.Lon2)
+	//fmt.Printf("The position is (%.8f, %.8f).\n", r.Lat2, r.Lon2)
 
 	assert.InDelta(t, 32.11195529, r.Lat2, 1e-8)
 	assert.InDelta(t, -63.95925278, r.Lon2, 1e-8)
@@ -28,7 +28,7 @@ func TestPointSouthwestOfPerth(t *testing.T) {
 
 func TestJFKToLHR(t *testing.T) {
 	r := geodesic.WGS84.InverseWithCapabilities(40.6, -73.8, 51.6, -0.5, capabilities.Area)
-	fmt.Printf("The area is %.1f m^2.\n", r.S12Area)
+	//fmt.Printf("The area is %.1f m^2.\n", r.S12Area)
 
 	assert.InDelta(t, 40041368848742.5, r.S12Area, 1e-1)
 }
@@ -40,11 +40,11 @@ func TestWaypointsBeijingToSanFrancisco(t *testing.T) {
 	rs := make([]string, 0, n)
 	for i := 0; i < n+1; i++ {
 		if i == 0 {
-			fmt.Println("distance latitude longitude azimuth")
+			//fmt.Println("distance latitude longitude azimuth")
 		}
 		s := math.Min(ds*float64(i), l.Distance())
 		r := l.PositionWithCapabilities(s, capabilities.Standard|capabilities.LongUnroll)
-		fmt.Printf("%.0f %.5f %.5f %.5f\n", r.S12, r.Lat2, r.Lon2, r.Azi2)
+		//fmt.Printf("%.0f %.5f %.5f %.5f\n", r.S12, r.Lat2, r.Lon2, r.Azi2)
 		rs = append(rs, fmt.Sprintf("%.0f %.5f %.5f %.5f", r.S12, r.Lat2, r.Lon2, r.Azi2))
 	}
 
@@ -69,11 +69,11 @@ func TestWaypointsBeijingToSanFranciscoExpressedInArcLen(t *testing.T) {
 	rs := make([]string, 0, n)
 	for i := 0; i < n+1; i++ {
 		if i == 0 {
-			fmt.Println("latitude longitude")
+			//fmt.Println("latitude longitude")
 		}
 		a := da * float64(i)
 		r := l.ArcPositionWithCapabilities(a, capabilities.Latitude|capabilities.Longitude|capabilities.LongUnroll)
-		fmt.Printf("%.5f %.5f\n", r.Lat2, r.Lon2)
+		//fmt.Printf("%.5f %.5f\n", r.Lat2, r.Lon2)
 		rs = append(rs, fmt.Sprintf("%.5f %.5f", r.Lat2, r.Lon2))
 	}
 
@@ -105,7 +105,7 @@ func TestAreaOfAntarctica(t *testing.T) {
 		p.AddPoint(pnt[0], pnt[1])
 	}
 	r := p.Compute(false, true)
-	fmt.Printf("Perimeter/area of Antarctica are %.3f m / %.1f m^2.\n", r.Perimeter, r.Area)
+	//fmt.Printf("Perimeter/area of Antarctica are %.3f m / %.1f m^2.\n", r.Perimeter, r.Area)
 
 	assert.InDelta(t, 16831067.893, r.Perimeter, 1e-3)
 	assert.InDelta(t, 13662703680020.1, r.Area, 1e-1)

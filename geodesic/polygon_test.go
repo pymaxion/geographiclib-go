@@ -8,6 +8,7 @@ func TestPolygonArea(t *testing.T) {
 		planimeter5,
 		planimeter6,
 		planimeter12,
+		planimeter12r,
 		planimeter13,
 		planimeter15,
 		planimeter19,

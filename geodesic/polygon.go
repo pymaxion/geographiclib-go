@@ -83,7 +83,6 @@ func (p *PolygonArea) Clear() {
 // AddPoint adds a point to the polygon or polyline represented by the
 // PolygonArea instance. Note that lat should be in the range [-90°, 90°].
 func (p *PolygonArea) AddPoint(lat, lon float64) {
-	lon = angNormalize(lon)
 	if p.num == 0 {
 		p.lat0, p.lat1 = lat, lat
 		p.lon0, p.lon1 = lon, lon
@@ -262,35 +261,29 @@ func (p *PolygonArea) TestEdge(azi, s float64, reverse, sign bool) PolygonResult
 // else zero.
 func transit(lon1, lon2 float64) int {
 	// Compute lon12 the same way as Geodesic.Inverse.
+	lon12, _ := angDiff(lon1, lon2)
 	lon1 = angNormalize(lon1)
 	lon2 = angNormalize(lon2)
-	lon12, _ := angDiff(lon1, lon2)
-	cross := 0
-	if lon1 <= 0 && lon2 > 0 && lon12 > 0 {
-		cross = 1
-	} else if lon2 <= 0 && lon1 > 0 && lon12 < 0 {
-		cross = -1
+
+	if lon12 > 0 && ((lon1 < 0 && lon2 >= 0) || (lon1 > 0 && lon2 == 0)) {
+		return 1
+	} else if lon12 < 0 && lon1 >= 0 && lon2 < 0 {
+		return -1
+	} else {
+		return 0
 	}
-	return cross
 }
 
 // transitDirect is an alternate version of transit to deal with longitudes in
 // the direct problem.
 func transitDirect(lon1, lon2 float64) int {
-	// We want to compute exactly:
-	//   int(ceil(lon2 / 360)) - int(ceil(lon1 / 360))
-	// Since we only need the parity of the result we can use std::remquo but this is
-	// buggy with g++ 4.8.3 and requires C++11. So instead we do
-	lon1 = math.Mod(lon1, 720.0)
-	lon2 = math.Mod(lon2, 720.0)
-	u, v := 0, 0
-	if (lon2 <= 0 && lon2 > -360) || lon2 > 360 {
-		u = 1
-	}
-	if (lon1 <= 0 && lon1 > -360) || lon1 > 360 {
-		v = 1
-	}
-	return u - v
+	// We want to compute exactly
+	//   int(floor(lon2 / 360)) - int(floor(lon1 / 360))
+	lon1 = math.Remainder(lon1, 720)
+	lon2 = math.Remainder(lon2, 720)
+	t2 := int(ternary(lon2 >= 0 && lon2 < 360, 0, 1))
+	t1 := int(ternary(lon1 >= 0 && lon1 < 360, 0, 1))
+	return t2 - t1
 }
 
 func areaReduceA(area *accumulator, area0 float64, crossings int, reverse, sign bool) float64 {
@@ -320,7 +313,7 @@ func areaReduceA(area *accumulator, area0 float64, crossings int, reverse, sign 
 }
 
 func areaReduceB(area, area0 float64, crossings int, reverse, sign bool) float64 {
-	area = remainder(area, area0)
+	area = math.Remainder(area, area0)
 	if (crossings & 1) != 0 {
 		area += ternary(area < 0, 1, -1) * area0 / 2
 	}
