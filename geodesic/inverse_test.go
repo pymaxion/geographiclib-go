@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/pymaxion/geographiclib-go/geodesic/capabilities"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,4 +50,85 @@ func TestInverse(t *testing.T) {
 	} {
 		t.Run(testCase.String(), testCase.logic)
 	}
+
+	t.Run("azimuth with coincident point on equator", func(t *testing.T) {
+		testCases := []struct {
+			lat1 float64
+			lat2 float64
+			azi  float64
+		}{
+			{0, minusZero, 180},
+			{minusZero, 0, 0},
+		}
+
+		for _, tt := range testCases {
+			t.Run(fmt.Sprintf("lat1: %.3f, lat2: %.3f, azi: %.3f", tt.lat1, tt.lat2, tt.azi), func(t *testing.T) {
+				r := WGS84.Inverse(tt.lat1, 0, tt.lat2, 0)
+				assert.True(t, equiv(tt.azi, r.Azi1))
+				assert.True(t, equiv(tt.azi, r.Azi2))
+			})
+		}
+	})
+
+	t.Run("Does the nearly antipodal equatorial solution go north or south?", func(t *testing.T) {
+		testCases := []struct {
+			lat1 float64
+			lat2 float64
+			azi1 float64
+			azi2 float64
+		}{
+			{0, 0, 56, 124},
+			{minusZero, minusZero, 124, 56},
+		}
+
+		for _, tt := range testCases {
+			t.Run(fmt.Sprintf("lat1: %.3f, lat2: %.3f", tt.lat1, tt.lat2), func(t *testing.T) {
+				r := WGS84.Inverse(tt.lat1, 0, tt.lat2, 179.5)
+				assert.InDelta(t, tt.azi1, r.Azi1, 1)
+				assert.InDelta(t, tt.azi2, r.Azi2, 1)
+			})
+		}
+	})
+
+	t.Run("Does the exact antipodal equatorial path go N/S + E/W?", func(t *testing.T) {
+		testCases := []struct {
+			lat1 float64
+			lat2 float64
+			lon2 float64
+			azi1 float64
+			azi2 float64
+		}{
+			{0, 0, +180, 0, +180},
+			{minusZero, minusZero, +180, +180, 0},
+			{0, 0, -180, minusZero, -180},
+			{minusZero, minusZero, -180, -180, minusZero},
+		}
+
+		for _, tt := range testCases {
+			t.Run(fmt.Sprintf("lat1: %.3f, lat2: %.3f, lon2: %.3f", tt.lat1, tt.lat2, tt.lon2), func(t *testing.T) {
+				r := WGS84.Inverse(tt.lat1, 0, tt.lat2, tt.lon2)
+				assert.True(t, equiv(tt.azi1, r.Azi1))
+				assert.True(t, equiv(tt.azi2, r.Azi2))
+			})
+		}
+	})
+
+	t.Run("Antipodal points on the equator with prolate ellipsoid", func(t *testing.T) {
+		testCases := []struct {
+			lon2 float64
+			azi  float64
+		}{
+			{+180, +90},
+			{-180, -90},
+		}
+
+		g, _ := NewGeodesic(6.4e6, -1/300.0)
+		for _, tt := range testCases {
+			t.Run(fmt.Sprintf("lon2: %.3f", tt.lon2), func(t *testing.T) {
+				r := g.Inverse(0, 0, 0, tt.lon2)
+				assert.True(t, equiv(tt.azi, r.Azi1))
+				assert.True(t, equiv(tt.azi, r.Azi2))
+			})
+		}
+	})
 }

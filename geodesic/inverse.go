@@ -52,15 +52,13 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	}
 
 	// Make longitude difference positive.
-	lonSign := ternary(lon12 >= 0, 1, -1)
-	// If very close to being on the same half-meridian, then make it so.
-	lon12 = lonSign * angRound(lon12)
-	lon12s = angRound((180 - lon12) - lonSign*lon12s)
+	lonSign := math.Copysign(1, lon12)
+	lon12 *= lonSign
+	lon12s *= lonSign
 	lam12 := deg2rad(lon12)
-	slam12, clam12 := sincosd(ternary(lon12 > 90, lon12s, lon12))
-	if lon12 > 90 {
-		clam12 *= -1
-	}
+	// Calculate sincos of lon12 + error (this applies angRound internally)
+	slam12, clam12 := sincosde(lon12, lon12s)
+	lon12s = (180 - lon12) - lon12s // the supplementary longitude difference
 
 	// Swap points so that point with higher (abs) latitude is point 1
 	// If one latitude is a nan, then it becomes lat1.
@@ -70,7 +68,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		lat1, lat2 = lat2, lat1
 	}
 	// Make lat1 <= 0
-	latSign := ternary(lat1 < 0, 1, -1)
+	latSign := math.Copysign(1, -lat1)
 	lat1 *= latSign
 	lat2 *= latSign
 	// Now we have
@@ -106,7 +104,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	// 10 (Release and Debug)
 	if cbet1 < -sbet1 {
 		if cbet2 == cbet1 {
-			sbet2 = ternary(sbet2 < 0, sbet1, -sbet1)
+			sbet2 = math.Copysign(sbet1, sbet2)
 		}
 	} else {
 		if math.Abs(sbet2) == -sbet1 {
@@ -129,7 +127,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		// tan(bet) = tan(sig) * cos(alp)
 		ssig1, csig1 := sbet1, r.calp1*cbet1
 		ssig2, csig2 := sbet2, r.calp2*cbet2
-		// sig12 = sig2 - sig1
+		// sig12 = sig2 - sig1 (N.B., math.Max(+0.0, -0.0) -> +0.0)
 		sig12 = math.Atan2(math.Max(0.0, csig1*ssig2-ssig1*csig2), csig1*csig2+ssig1*ssig2)
 
 		lCaps := caps | capabilities.Distance | capabilities.ReducedLength
@@ -310,7 +308,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			r.S12Area = 0
 		}
 
-		if !meridian && somg12 > 1 {
+		if !meridian && somg12 == 2 {
 			somg12, comg12 = math.Sincos(omg12)
 		}
 
