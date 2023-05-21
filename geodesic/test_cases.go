@@ -673,7 +673,7 @@ var (
 		logic: func(t *testing.T) {
 			g, _ := NewGeodesic(6378137, 1/298.257222101)
 			r := g.InverseWithCapabilities(0, 0, 60.0832522871723, 89.8492185074635, capabilities.Area)
-			assert.InDelta(t, 42426932221845, r.S12Area, 0.5)
+			assert.InDelta(t, int64(42426932221845), r.S12Area, 0.5)
 		},
 	}
 )
