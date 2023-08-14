@@ -53,7 +53,7 @@ func (g *Gnomonic) Reverse(lat0, lon0, x, y float64) GnomonicData {
 
 	line := g._earth.LineWithCapabilities(lat0, lon0, azi0, capabilities.Latitude|capabilities.Longitude|capabilities.Azimuth|
 		capabilities.DistanceIn|capabilities.ReducedLength|capabilities.GeodesicScale)
-	count := 10
+	count := NumIt
 	trip := 0
 	var pos Data
 
