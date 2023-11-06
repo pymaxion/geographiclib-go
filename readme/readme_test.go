@@ -7,7 +7,6 @@ import (
 
 	"github.com/pymaxion/geographiclib-go/geodesic"
 	"github.com/pymaxion/geographiclib-go/geodesic/capabilities"
-
 	"github.com/stretchr/testify/assert"
 )
 
