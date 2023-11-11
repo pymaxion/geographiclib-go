@@ -3,6 +3,8 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go)
 
+![Build](https://github.com/pymaxion/geographiclib-go/actions/workflows/build.yml/badge.svg) ![Tests](https://github.com/pymaxion/geographiclib-go/actions/workflows/tests.yml/badge.svg)
+
 # Description
 This is a Go implementation of the geodesic algorithms from Charles F. F. Karney's [GeographicLib](https://geographiclib.sourceforge.io/). Though not an official implementation of GeographicLib, geographiclib-go has feature parity with the officially-maintained [Java](https://geographiclib.sourceforge.io/html/java/) and [Python](https://geographiclib.sourceforge.io/html/python/) implementations and additionally includes a utility to validate the implementation against the official 500k-line [GeodTest.dat](https://geographiclib.sourceforge.io/html/geodesic.html#testgeod) repository of geodesic test data.
 
