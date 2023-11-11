@@ -99,7 +99,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	// |bet2|. Alternatively (cbet1 >= -sbet1), abs(sbet2) + sbet1 is a better
 	// measure. This logic is used in assigning calp2 in Lambda12. Sometimes these
 	// quantities vanish and in that case we force bet2 = +/- bet1 exactly. An
-	// example where is is necessary is the inverse problem 48.522876735459 0
+	// example where this is necessary is the inverse problem 48.522876735459 0
 	// -48.52287673545898293 179.599720456223079643 which failed with Visual Studio
 	// 10 (Release and Debug)
 	if cbet1 < -sbet1 {
