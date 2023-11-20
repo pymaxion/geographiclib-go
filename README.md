@@ -9,9 +9,10 @@
 This is a Go implementation of the geodesic algorithms from Charles F. F. Karney's [GeographicLib](https://geographiclib.sourceforge.io/). Though not an official implementation of GeographicLib, geographiclib-go has feature parity with the officially-maintained [Java](https://geographiclib.sourceforge.io/html/java/) and [Python](https://geographiclib.sourceforge.io/html/python/) implementations and additionally includes a utility to validate the implementation against the official 500k-line [GeodTest.dat](https://geographiclib.sourceforge.io/html/geodesic.html#testgeod) repository of geodesic test data.
 
 More information about the GeographicLib project can be found at https://geographiclib.sourceforge.io. This README lifts heavily from GeographicLib's excellent project documentation, especially the section [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid), which copies Karney's documentation verbatim to introduce the direct and inverse geodesic problems.
-           
+
 # Contents
 1. [Getting started](#getting-started)
+   1. [Version history](#version-history)
 1. [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid)
    1. [Introduction](#introduction)
    1. [Additional properties](#additional-properties)
@@ -33,6 +34,16 @@ More information about the GeographicLib project can be found at https://geograp
 `$ go get github.com/pymaxion/geographiclib-go`
 
 See the `examples` directory for some basic code samples.
+
+## Version history
+See [Releases](https://github.com/pymaxion/geographiclib-go/releases) for full details.
+
+| Version                                                                    | Description                            |
+|----------------------------------------------------------------------------|----------------------------------------|
+| [v1.1.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.1.0) | Add gnomonic projection calculations   |
+| [v1.0.1](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.1) | Fix failing build on ARM architectures |
+| [v1.0.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.0) | Initial release                        |
+
 
 # Geodesics on an ellipsoid
 ## Introduction
