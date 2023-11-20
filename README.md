@@ -3,13 +3,16 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go)
 
+![Build](https://github.com/pymaxion/geographiclib-go/actions/workflows/build.yml/badge.svg) ![Tests](https://github.com/pymaxion/geographiclib-go/actions/workflows/tests.yml/badge.svg)
+
 # Description
 This is a Go implementation of the geodesic algorithms from Charles F. F. Karney's [GeographicLib](https://geographiclib.sourceforge.io/). Though not an official implementation of GeographicLib, geographiclib-go has feature parity with the officially-maintained [Java](https://geographiclib.sourceforge.io/html/java/) and [Python](https://geographiclib.sourceforge.io/html/python/) implementations and additionally includes a utility to validate the implementation against the official 500k-line [GeodTest.dat](https://geographiclib.sourceforge.io/html/geodesic.html#testgeod) repository of geodesic test data.
 
 More information about the GeographicLib project can be found at https://geographiclib.sourceforge.io. This README lifts heavily from GeographicLib's excellent project documentation, especially the section [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid), which copies Karney's documentation verbatim to introduce the direct and inverse geodesic problems.
-           
+
 # Contents
 1. [Getting started](#getting-started)
+   1. [Version history](#version-history)
 1. [Geodesics on an ellipsoid](#geodesics-on-an-ellipsoid)
    1. [Introduction](#introduction)
    1. [Additional properties](#additional-properties)
@@ -32,11 +35,21 @@ More information about the GeographicLib project can be found at https://geograp
 
 See the `examples` directory for some basic code samples.
 
+## Version history
+See [Releases](https://github.com/pymaxion/geographiclib-go/releases) for full details.
+
+| Version                                                                    | Description                            |
+|----------------------------------------------------------------------------|----------------------------------------|
+| [v1.1.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.1.0) | Add gnomonic projection calculations   |
+| [v1.0.1](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.1) | Fix failing build on ARM architectures |
+| [v1.0.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.0) | Initial release                        |
+
+
 # Geodesics on an ellipsoid
 ## Introduction
-Consider an ellipsoid of revolution with equatorial radius <img src="https://render.githubusercontent.com/render/math?math=a"/>, polar semi-axis <img src="https://render.githubusercontent.com/render/math?math=b"/>, and flattening <img src="https://render.githubusercontent.com/render/math?math=f=\frac{a-b}{a}"/>. Points on the surface of the ellipsoid are characterized by their latitude <img src="https://render.githubusercontent.com/render/math?math=\varphi"/> and longitude <img src="https://render.githubusercontent.com/render/math?math=\lambda"/>. (Note that latitude here means the *geographical latitude*, the angle between the normal to the ellipsoid and the equatorial plane).
+Consider an ellipsoid of revolution with equatorial radius $a$, polar semi-axis $b$, and flattening $f=\frac{a-b}{a}$. Points on the surface of the ellipsoid are characterized by their latitude $\varphi$ and longitude $\lambda$. (Note that latitude here means the *geographical latitude*, the angle between the normal to the ellipsoid and the equatorial plane).
 
-The shortest path between two points on the ellipsoid at <img src="https://render.githubusercontent.com/render/math?math=(\varphi_1, \lambda_1)"/> and <img src="https://render.githubusercontent.com/render/math?math=(\varphi_2, \lambda_2)"/> is called the *geodesic*. Its length is <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/> and the geodesic from point 1 to point 2 has forward azimuths <img src="https://render.githubusercontent.com/render/math?math=\alpha_1"/> and <img src="https://render.githubusercontent.com/render/math?math=\alpha_2"/> at the two end points. In this figure, we have <img src="https://render.githubusercontent.com/render/math?math=\lambda_{12}=\lambda_2-\lambda_1"/>.
+The shortest path between two points on the ellipsoid at $(\varphi_1, \lambda_1)$ and $(\varphi_2, \lambda_2)$ is called the *geodesic*. Its length is $s_{12}$ and the geodesic from point 1 to point 2 has forward azimuths $\alpha_1$ and $\alpha_2$ at the two end points. In this figure, we have $\lambda_{12}=\lambda_2-\lambda_1$.
 
 <img src="https://raw.githubusercontent.com/pymaxion/geographiclib-go/mainline/readme/Geodesic_problem_on_an_ellipsoid.svg" alt="diagram" width="600">
 
@@ -44,33 +57,33 @@ A geodesic can be extended indefinitely by requiring that any sufficiently small
 
 Traditionally two geodesic problems are considered:
 
-* the direct problem — given <img src="https://render.githubusercontent.com/render/math?math=\varphi_1"/>, <img src="https://render.githubusercontent.com/render/math?math=\lambda_1"/>, <img src="https://render.githubusercontent.com/render/math?math=\alpha_1"/>, <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/>, determine <img src="https://render.githubusercontent.com/render/math?math=\varphi_2"/>, <img src="https://render.githubusercontent.com/render/math?math=\lambda_2"/>, and <img src="https://render.githubusercontent.com/render/math?math=\alpha_2"/>; this is solved by `Geodesic.Direct()`.
-* the inverse problem — given <img src="https://render.githubusercontent.com/render/math?math=\varphi_1"/>, <img src="https://render.githubusercontent.com/render/math?math=\lambda_1"/>, <img src="https://render.githubusercontent.com/render/math?math=\varphi_2"/>, <img src="https://render.githubusercontent.com/render/math?math=\lambda_2"/>, determine <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/>, <img src="https://render.githubusercontent.com/render/math?math=\alpha_1"/>, and <img src="https://render.githubusercontent.com/render/math?math=\alpha_2"/>; this is solved by `Geodesic.Inverse()`.
+* the direct problem — given $\varphi_1$, $\lambda_1$, $\alpha_1$, $s_{12}$, determine $\varphi_2$, $\lambda_2$, and $\alpha_2$; this is solved by `Geodesic.Direct()`.
+* the inverse problem — given $\varphi_1$, $\lambda_1$, $\varphi_2$, $\lambda_2$, determine $s_{12}$, $\alpha_1$, and $\alpha_2$; this is solved by `Geodesic.Inverse()`.
 
 ## Additional properties
 The functions which solve the geodesic problems also calculate several other quantities of interest:
 
-* <img src="https://render.githubusercontent.com/render/math?math=S_{12}"/> is the area between the geodesic from point 1 to point 2 and the equator; i.e., it is the area, measured counter-clockwise, of the quadrilateral with corners <img src="https://render.githubusercontent.com/render/math?math=(\varphi_1, \lambda_1)"/>, <img src="https://render.githubusercontent.com/render/math?math=(0,\lambda_1)"/>, <img src="https://render.githubusercontent.com/render/math?math=(0,\lambda_2)"/>, and <img src="https://render.githubusercontent.com/render/math?math=(\varphi_2, \lambda_2)"/>. It is given in meters squared.
-* <img src="https://render.githubusercontent.com/render/math?math=m_{12}"/>, the reduced length of the geodesic, is defined such that if the initial azimuth is perturbed by <img src="https://render.githubusercontent.com/render/math?math=d\alpha_1"/> (radians) then the second point is displaced by <img src="https://render.githubusercontent.com/render/math?math=m_{12}d\alpha_1"/> in the direction perpendicular to the geodesic. <img src="https://render.githubusercontent.com/render/math?math=m_{12}"/> is given in meters. On a curved surface the reduced length obeys a symmetry relation, <img src="https://render.githubusercontent.com/render/math?math=m_{12}+m_{21}=0"/>. On a flat surface, we have <img src="https://render.githubusercontent.com/render/math?math=m_{12}=s_{12}"/>.
-* <img src="https://render.githubusercontent.com/render/math?math=M_{12}"/> and <img src="https://render.githubusercontent.com/render/math?math=M_{21}"/> are geodesic scales. If two geodesics are parallel at point 1 and separated by a small distance <img src="https://render.githubusercontent.com/render/math?math=dt"/>, then they are separated by a distance <img src="https://render.githubusercontent.com/render/math?math=M_{12}dt"/> at point 2. <img src="https://render.githubusercontent.com/render/math?math=M_{21}"/> is defined similarly (with the geodesics being parallel to one another at point 2). <img src="https://render.githubusercontent.com/render/math?math=M_{12}"/> and <img src="https://render.githubusercontent.com/render/math?math=M_{21}"/> are dimensionless quantities. On a flat surface, we have <img src="https://render.githubusercontent.com/render/math?math=M_{12}=M_{21}=1"/>.
-* <img src="https://render.githubusercontent.com/render/math?math=\sigma_{12}"/> is the arc length on the auxiliary sphere. This is a construct for converting the problem to one in spherical trigonometry. The spherical arc length from one equator crossing to the next is always 180°.
+* $S_{12}$ is the area between the geodesic from point 1 to point 2 and the equator; i.e., it is the area, measured counter-clockwise, of the quadrilateral with corners $(\varphi_1, \lambda_1)$, $(0,\lambda_1)$, $(0,\lambda_2)$, and $(\varphi_2, \lambda_2)$. It is given in meters squared.
+* $m_{12}$, the reduced length of the geodesic, is defined such that if the initial azimuth is perturbed by $d\alpha_1$ (radians) then the second point is displaced by $m_{12}d\alpha_1$ in the direction perpendicular to the geodesic. $m_{12}$ is given in meters. On a curved surface the reduced length obeys a symmetry relation, $m_{12}+m_{21}=0$. On a flat surface, we have $m_{12}=s_{12}$.
+* $M_{12}$ and $M_{21}$ are geodesic scales. If two geodesics are parallel at point 1 and separated by a small distance $dt$, then they are separated by a distance $M_{12}dt$ at point 2. $M_{21}$ is defined similarly (with the geodesics being parallel to one another at point 2). $M_{12}$ and $M_{21}$ are dimensionless quantities. On a flat surface, we have $M_{12}=M_{21}=1$.
+* $\sigma_{12}$ is the arc length on the auxiliary sphere. This is a construct for converting the problem to one in spherical trigonometry. The spherical arc length from one equator crossing to the next is always 180°.
 
 If points 1, 2, and 3 lie on a single geodesic, then the following addition rules hold:
 
-* <img src="https://render.githubusercontent.com/render/math?math=s_{13}=s_{12}+s_{23}"/>
-* <img src="https://render.githubusercontent.com/render/math?math=\sigma_{13}=\sigma_{12}+\sigma_{23}"/>
-* <img src="https://render.githubusercontent.com/render/math?math=S_{13}=S_{12}+S_{23}"/>
-* <img src="https://render.githubusercontent.com/render/math?math=m_{13}=m_{12}M_{23}+m_{23}M_{21}"/>
-* <img src="https://render.githubusercontent.com/render/math?math=M_{13}=M_{12}M_{23}-\frac{(1-M_{12}M_{21})m_{23}}{m_{12}}"/>
-* <img src="https://render.githubusercontent.com/render/math?math=M_{31}=M_{32}M_{21}-\frac{(1-M_{23}M_{32})m_{12}}{m_{23}}"/>
+* $s_{13}=s_{12}+s_{23}$
+* $\sigma_{13}=\sigma_{12}+\sigma_{23}$
+* $S_{13}=S_{12}+S_{23}$
+* $m_{13}=m_{12}M_{23}+m_{23}M_{21}$
+* $M_{13}=M_{12}M_{23}-\frac{(1-M_{12}M_{21})m_{23}}{m_{12}}$
+* $M_{31}=M_{32}M_{21}-\frac{(1-M_{23}M_{32})m_{12}}{m_{23}}$
 
 ## Multiple shortest geodesics
 The shortest distance found by solving the inverse problem is (obviously) uniquely defined. However, in a few special cases there are multiple azimuths which yield the same shortest distance. Here is a catalog of those cases:
 
-* <img src="https://render.githubusercontent.com/render/math?math=\varphi_1=-\varphi_2"/> (with neither point at a pole). If <img src="https://render.githubusercontent.com/render/math?math=\alpha_1=\alpha2"/>, the geodesic is unique. Otherwise there are two geodesics and the second one is obtained by setting <img src="https://render.githubusercontent.com/render/math?math=[\alpha_1,\alpha_2]\leftarrow[\alpha_2,\alpha_1]"/>, <img src="https://render.githubusercontent.com/render/math?math=[M_{12},M_{21}]\leftarrow[M_{21},M_{12}]"/>, <img src="https://render.githubusercontent.com/render/math?math=S_{12}\leftarrow-S_{12}"/>. (This occurs when the longitude difference is near <img src="https://render.githubusercontent.com/render/math?math=\pm180^{\circ}"/> for oblate ellipsoids.)
-* <img src="https://render.githubusercontent.com/render/math?math=\lambda_2=\lambda_1\pm180^{\circ}"/> (with neither point at a pole). If <img src="https://render.githubusercontent.com/render/math?math=\alpha_1=0^{\circ}"/> or <img src="https://render.githubusercontent.com/render/math?math=\pm180^{\circ}"/>, the geodesic is unique. Otherwise there are two geodesics and the second one is obtained by setting <img src="https://render.githubusercontent.com/render/math?math=[\alpha_1,\alpha_2]\leftarrow[-\alpha_1,-\alpha_2]"/>, <img src="https://render.githubusercontent.com/render/math?math=S_{12}\leftarrow-S_{12}"/>. (This occurs when <img src="https://render.githubusercontent.com/render/math?math=\varphi_2"/> is near <img src="https://render.githubusercontent.com/render/math?math=-\varphi_1"/> for prolate ellipsoids.)
-* Points 1 and 2 at opposite poles. There are infinitely many geodesics which can be generated by setting <img src="https://render.githubusercontent.com/render/math?math=[\alpha_1,\alpha_2]\leftarrow[\alpha_1,\alpha_2]+[\delta,-\delta]"/>, for arbitrary <img src="https://render.githubusercontent.com/render/math?math=\delta"/>. (For spheres, this prescription applies when points 1 and 2 are antipodal.)
-* <img src="https://render.githubusercontent.com/render/math?math=s_{12}=0"/> (coincident points). There are infinitely many geodesics which can be generated by setting <img src="https://render.githubusercontent.com/render/math?math=[\alpha_1,\alpha_2]\leftarrow[\alpha_1,\alpha_2]+[\delta,\delta]"/>, for arbitrary <img src="https://render.githubusercontent.com/render/math?math=\delta"/>.
+* $\varphi_1=-\varphi_2$ (with neither point at a pole). If $\alpha_1=\alpha2$, the geodesic is unique. Otherwise there are two geodesics and the second one is obtained by setting $[\alpha_1,\alpha_2]\leftarrow[\alpha_2,\alpha_1]$, $[M_{12},M_{21}]\leftarrow[M_{21},M_{12}]$, $S_{12}\leftarrow-S_{12}$. (This occurs when the longitude difference is near $\pm180^{\circ}$ for oblate ellipsoids.)
+* $\lambda_2=\lambda_1\pm180^{\circ}$ (with neither point at a pole). If $\alpha_1=0^{\circ}$ or $\pm180^{\circ}$, the geodesic is unique. Otherwise there are two geodesics and the second one is obtained by setting $[\alpha_1,\alpha_2]\leftarrow[-\alpha_1,-\alpha_2]$, $S_{12}\leftarrow-S_{12}$. (This occurs when $\varphi_2$ is near $-\varphi_1$ for prolate ellipsoids.)
+* Points 1 and 2 at opposite poles. There are infinitely many geodesics which can be generated by setting $[\alpha_1,\alpha_2]\leftarrow[\alpha_1,\alpha_2]+[\delta,-\delta]$, for arbitrary $\delta$. (For spheres, this prescription applies when points 1 and 2 are antipodal.)
+* $s_{12}=0$ (coincident points). There are infinitely many geodesics which can be generated by setting $[\alpha_1,\alpha_2]\leftarrow[\alpha_1,\alpha_2]+[\delta,\delta]$, for arbitrary $\delta$.
 
 ## Background
 The algorithms implemented by this package are given in Karney (2013) and are based on Bessel (1825) and Helmert (1880); the algorithm for areas is based on Danielsen (1989). These improve on the work of Vincenty (1975) in the following respects:
@@ -81,25 +94,25 @@ The algorithms implemented by this package are given in Karney (2013) and are ba
 
 # The library interface
 ## Units
-All angles (latitude, longitude, azimuth, arc length) are measured in degrees with latitudes increasing northwards, longitudes increasing eastwards, and azimuths measured clockwise from north. For a point at a pole, the azimuth is defined by keeping the longitude fixed, writing <img src="https://render.githubusercontent.com/render/math?math=\varphi=\pm(90^{\circ}-\epsilon)"/>, and taking the limit <img src="https://render.githubusercontent.com/render/math?math=\epsilon\rightarrow0+"/>.
+All angles (latitude, longitude, azimuth, arc length) are measured in degrees with latitudes increasing northwards, longitudes increasing eastwards, and azimuths measured clockwise from north. For a point at a pole, the azimuth is defined by keeping the longitude fixed, writing $\varphi=\pm(90^{\circ}-\epsilon)$, and taking the limit $\epsilon\rightarrow0+$.
 
 ## `geodesic.Data`
 The results returned by `Geodesic.Direct()`, `Geodesic.Inverse()`, `Line.Position()`, etc., return a struct type (`geodesic.Data`) with some of the following 12 fields set:
 
-* `Lat1` = <img src="https://render.githubusercontent.com/render/math?math=\varphi_1"/>, latitude of point 1 (degrees)
-* `Lon1` = <img src="https://render.githubusercontent.com/render/math?math=\lambda_1"/>, longitude of point 1 (degrees)
-* `Azi1` = <img src="https://render.githubusercontent.com/render/math?math=\alpha_1"/>, azimuth of line at point 1 (degrees)
-* `Lat2` = <img src="https://render.githubusercontent.com/render/math?math=\varphi_2"/>, latitude of point 2 (degrees)
-* `Lon2` = <img src="https://render.githubusercontent.com/render/math?math=\lambda_2"/>, longitude of point 2 (degrees)
-* `Azi2` = <img src="https://render.githubusercontent.com/render/math?math=\alpha_2"/>, (forward) azimuth of line at point 2 (degrees)
-* `S12` = <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/>, distance from 1 to 2 (meters)
-* `A12` = <img src="https://render.githubusercontent.com/render/math?math=\sigma_{12}"/>, arc length on auxiliary sphere from 1 to 2 (degrees)
-* `M12Reduced` = <img src="https://render.githubusercontent.com/render/math?math=m_{12}"/>, reduced length of geodesic (meters)
-* `M12` = <img src="https://render.githubusercontent.com/render/math?math=M_{12}"/>, geodesic scale at 2 relative to 1 (dimensionless)
-* `M21` = <img src="https://render.githubusercontent.com/render/math?math=M_{21}"/>, geodesic scale at 1 relative to 2 (dimensionless)
-* `S12Area` = <img src="https://render.githubusercontent.com/render/math?math=S_{12}"/>, area between geodesic and equator (meters<img src="https://render.githubusercontent.com/render/math?math=^2"/>)
+* `Lat1` = $\varphi_1$, latitude of point 1 (degrees)
+* `Lon1` = $\lambda_1$, longitude of point 1 (degrees)
+* `Azi1` = $\alpha_1$, azimuth of line at point 1 (degrees)
+* `Lat2` = $\varphi_2$, latitude of point 2 (degrees)
+* `Lon2` = $\lambda_2$, longitude of point 2 (degrees)
+* `Azi2` = $\alpha_2$, (forward) azimuth of line at point 2 (degrees)
+* `S12` = $s_{12}$, distance from 1 to 2 (meters)
+* `A12` = $\sigma_{12}$, arc length on auxiliary sphere from 1 to 2 (degrees)
+* `M12Reduced` = $m_{12}$, reduced length of geodesic (meters)
+* `M12` = $M_{12}$, geodesic scale at 2 relative to 1 (dimensionless)
+* `M21` = $M_{21}$, geodesic scale at 1 relative to 2 (dimensionless)
+* `S12Area` = $S_{12}$, area between geodesic and equator (meters$^2$)
 
-**Note**: because of Go's use of capitalization to denote exported symbols, the names of a few of these fields do not exactly match their symbolic representations. For example, it is not possible to distinguish between <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/> and <img src="https://render.githubusercontent.com/render/math?math=S_{12}"/> using lowercase vs. capitalized field names as is possible in other languages' implementations of GeographicLib; <img src="https://render.githubusercontent.com/render/math?math=s_{12}"/> *must* be capitalized to be accessible from other packages. Thus, where necessary to remove ambiguity, suffixes have been added to the less-commonly-used field names (e.g., <img src="https://render.githubusercontent.com/render/math?math=s_{12}\rightarrow"/>`S12`, <img src="https://render.githubusercontent.com/render/math?math=S_{12}\rightarrow"/>`S12Area`).
+**Note**: because of Go's use of capitalization to denote exported symbols, the names of a few of these fields do not exactly match their symbolic representations. For example, it is not possible to distinguish between $s_{12}$ and $S_{12}$ using lowercase vs. capitalized field names as is possible in other languages' implementations of GeographicLib; $s_{12}$ *must* be capitalized to be accessible from other packages. Thus, where necessary to remove ambiguity, suffixes have been added to the less-commonly-used field names (e.g., $s_{12}\rightarrow$`S12`, $S_{12}\rightarrow$`S12Area`).
 
 ## `capabilities.Mask`
 The standard geodesic functions (`Geodesic.Direct()`, `Geodesic.Inverse()`, etc.) all return the 7 basic quantities: `Lat1`, `Lon1`, `Azi1`, `Lat2`, `Lon2`, `Azi2`, `S12`, together with the arc length `A12`. However, each function has a counterpart `<Function>WithCapabilities()` requiring an additional parameter of type `capabilities.Mask`; this additional parameter is used to tailor which quantities to calculate. In addition, when a `Line` is instantiated, it too can be provided with a `capabilities.Mask` parameter specifying what quantities can be returned from the resulting instance.
@@ -130,10 +143,10 @@ A custom `capabilities.Mask` parameter can be created by bitwise-or(`|`)’ing t
 * The distance `S12` is unrestricted. This allows geodesics to wrap around the ellipsoid. Such geodesics are no longer shortest paths; however, they retain the property that they are the straightest curves on the surface.
 * Similarly, the spherical arc length `A12` is unrestricted.
 * Longitudes and azimuths are unrestricted; internally these are exactly reduced to the range [-180°, 180°), but see also the `LongUnroll` capability.
-* The equatorial radius <img src="https://render.githubusercontent.com/render/math?math=a"/> and the polar semi-axis <img src="https://render.githubusercontent.com/render/math?math=b"/> must both be positive and finite (this implies that <img src="https://render.githubusercontent.com/render/math?math=-\infty<f<1"/>).
-* The flattening <img src="https://render.githubusercontent.com/render/math?math=f"/> should satisfy <img src="https://render.githubusercontent.com/render/math?math=f\in[-\frac{1}{50},\frac{1}{50}]"/> in order to retain full accuracy. This condition holds for most applications in geodesy.
+* The equatorial radius $a$ and the polar semi-axis $b$ must both be positive and finite (this implies that $-\infty \lt f \lt 1$).
+* The flattening $f$ should satisfy $f\in[-\frac{1}{50},\frac{1}{50}]$ in order to retain full accuracy. This condition holds for most applications in geodesy.
 
-Reasonably accurate results can be obtained for <img src="https://render.githubusercontent.com/render/math?math=-0.2\le f\le0.2"/>. Here is a table of the approximate maximum error (expressed as a distance) for an ellipsoid with the same equatorial radius as the WGS84 ellipsoid and different values of the flattening.
+Reasonably accurate results can be obtained for $-0.2\le f\le0.2$. Here is a table of the approximate maximum error (expressed as a distance) for an ellipsoid with the same equatorial radius as the WGS84 ellipsoid and different values of the flattening.
 
 |abs(f)|error|
 |---|---|
@@ -144,7 +157,7 @@ Reasonably accurate results can be obtained for <img src="https://render.githubu
 |0.1|1.5 mm|
 |0.2|300 mm|
 
-Here 1 nm = 1 nanometer = <img src="https://render.githubusercontent.com/render/math?math=10^{-9}"/> m (not 1 nautical mile!)
+Here 1 nm = 1 nanometer = $10^{-9}$ m (not 1 nautical mile!)
 
 # Examples
 ## Initializing
