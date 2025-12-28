@@ -675,6 +675,23 @@ var (
 			assert.InDelta(t, int64(42426932221845), r.S12Area, 0.5)
 		},
 	}
+
+	geodSolve100 = geodSolve{
+		testNum: 100,
+		description: "Check fix for meridional failure for a strongly prolate ellipsoid. Bug was assuming " +
+			"sig12 < 1 guarantees the meridional geodesic is shortest even though m12 < 0. " +
+			"Bug is not present for f >= -2, b < 3*a.",
+		logic: func(t *testing.T) {
+			geod, err := NewGeodesic(1e6, -3)
+			require.Nil(t, err)
+
+			r := geod.Inverse(30, 0, 30, 180)
+			// Loose tolerances because series solution is inaccurate for f=-3
+			assert.InDelta(t, 22.368806, r.Azi1, 1.0)
+			assert.InDelta(t, 157.631194, r.Azi2, 1.0)
+			assert.InDelta(t, 1074081.6, r.S12, 1e3)
+		},
+	}
 )
 
 type planimeterTest struct {

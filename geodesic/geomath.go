@@ -34,7 +34,7 @@ var (
 	tol0    = epsilon
 	tol1    = 200 * tol0
 	tol2    = math.Sqrt(tol0)
-	tolb    = tol0 * tol2 // Check on bisection interval
+	tolb    = tol0 // Check on bisection interval
 	xthresh = 1000 * tol2
 )
 
