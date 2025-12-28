@@ -283,7 +283,7 @@ func TestIsFinite(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(fmt.Sprintf("%.3f", tt.val), func(t *testing.T) {
-			assert.Equal(t, tt.expectedResult, isfinite(tt.val))
+			assert.Equal(t, tt.expectedResult, isFinite(tt.val))
 		})
 	}
 }

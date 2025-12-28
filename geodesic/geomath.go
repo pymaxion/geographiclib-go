@@ -84,10 +84,11 @@ func sum(u, v float64) (float64, float64) {
 }
 
 // polyval evaluates a polynomial using Horner's method, where:
-//  n = order of the polynomial
-//  p = coefficient slice (of size n + s + 1 or more)
-//  s = starting index for the slice
-//  x = the variable
+//
+//	n = order of the polynomial
+//	p = coefficient slice (of size n + s + 1 or more)
+//	s = starting index for the slice
+//	x = the variable
 func polyval(n int, p []float64, s int, x float64) float64 {
 	var y float64
 	if n < 0 {
@@ -284,12 +285,14 @@ func atan2d(y, x float64) float64 {
 	return ang
 }
 
-// isfinite tests if x is finite
-func isfinite(x float64) bool {
+// isFinite tests if x is finite
+func isFinite(x float64) bool {
 	return !math.IsNaN(x) && !math.IsInf(x, 0)
 }
 
 // min returns the minimum of two ints
+//
+//goland:noinspection GoReservedWordUsedAsName
 func min(a, b int) int {
 	if a < b {
 		return a
