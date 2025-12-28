@@ -1,7 +1,7 @@
 # geographiclib-go
 ### A Go port of [GeographicLib](https://geographiclib.sourceforge.io/)
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go/v2.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go/v2)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go/v2)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go/v2)
 
 ![Build](https://github.com/pymaxion/geographiclib-go/actions/workflows/build.yml/badge.svg) ![Tests](https://github.com/pymaxion/geographiclib-go/actions/workflows/tests.yml/badge.svg)
 
@@ -164,7 +164,11 @@ Here 1 nm = 1 nanometer = $10^{-9}$ m (not 1 nautical mile!)
 
 # Examples
 ## Initializing
-The examples below assume that geographiclib-go has been imported using the package name `geodesic`.
+The examples below assume geographiclib-go has been imported as follows:
+```go
+import "github.com/pymaxion/geographiclib-go/v2/geodesic"
+import "github.com/pymaxion/geographiclib-go/v2/geodesic/capabilities"
+```
 
 geographiclib-go comes with a predefined instance of `Geodesic` for the WGS84 ellipsoid. To use this instance, simply reference `geodesic.WGS84`.
 ```go
