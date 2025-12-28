@@ -140,7 +140,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		//
 		// In fact, we will have sig12 > pi/2 for meridional geodesic which is not a
 		// shortest path.
-		if sig12 < 1 || m12x >= 0 {
+		if sig12 < tol2 || m12x >= 0 {
 			// Need at least 2, to handle 90 0 90 180
 			if sig12 < 3*tiny ||
 				// Prevent negative s12 or m12 for short lines
@@ -207,7 +207,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			salp1b, calp1b := tiny, -1.
 			ssig1, csig1, ssig2, csig2, eps, domg12 := math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
 
-			for tripn, tripb := false, false; numit < maxit2; numit++ {
+			for tripn, tripb := false, false; ; numit++ {
 				// the WGS84 logic set: mean = 1.47, sr = 1.25, max = 16
 				// WGS84 and random input: mean = 2.85, sr = 0.60
 				l12r := s.lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, r.salp1, r.calp1, slam12, clam12, numit < maxit1, c1a, c2a, c3a)
@@ -216,7 +216,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 				r.salp2, r.calp2 = l12r.salp2, l12r.calp2
 
 				// Reversed logic to allow escape with NaNs
-				if tripb || !(math.Abs(v) >= ternary(tripn, 8, 1)*tol0) {
+				if tripb || !(math.Abs(v) >= ternary(tripn, 8, 1)*tol0) || numit == maxit2 { // Last condition: enough bisections to get accurate result
 					break
 				}
 				// Update bracketing values
@@ -227,17 +227,21 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 				}
 				if numit < maxit1 && dv > 0 {
 					dalp1 := -v / dv
-					sdalp1, cdalp1 := math.Sincos(dalp1)
-					nsalp1 := r.salp1*cdalp1 + r.calp1*sdalp1
-					if nsalp1 > 0 && math.Abs(dalp1) < math.Pi {
-						r.calp1 = r.calp1*cdalp1 - r.salp1*sdalp1
-						r.salp1 = nsalp1
-						r.salp1, r.calp1 = norm(r.salp1, r.calp1)
-						// In some regimes we don't get quadratic convergence because
-						// slope -> 0.  So use convergence conditions based on epsilon
-						// instead of sqrt(epsilon).
-						tripn = math.Abs(v) <= 16*tol0
-						continue
+					// |dalp1| < pi test moved earlier to avoid expensive sin/cos
+					// computation for large dalp1 values
+					if math.Abs(dalp1) < math.Pi {
+						sdalp1, cdalp1 := math.Sincos(dalp1)
+						nsalp1 := r.salp1*cdalp1 + r.calp1*sdalp1
+						if nsalp1 > 0 {
+							r.calp1 = r.calp1*cdalp1 - r.salp1*sdalp1
+							r.salp1 = nsalp1
+							r.salp1, r.calp1 = norm(r.salp1, r.calp1)
+							// In some regimes we don't get quadratic convergence because
+							// slope -> 0.  So use convergence conditions based on epsilon
+							// instead of sqrt(epsilon).
+							tripn = math.Abs(v) <= 16*tol0
+							continue
+						}
 					}
 				}
 
