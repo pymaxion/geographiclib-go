@@ -45,7 +45,7 @@ See [Releases](https://github.com/pymaxion/geographiclib-go/releases) for full d
 | [v1.0.1](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.1) | Fix failing build on ARM architectures                         |
 | [v1.0.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.0) | Initial release                                                |
 
-**Note on v2.1.0 version jump:** Starting with this release, geographiclib-go versions are aligned with the official [Java](https://github.com/geographiclib/geographiclib-java) and [Python](https://github.com/geographiclib/geographiclib-python) implementations maintained by Charles Karney. This makes it easier to determine feature and bug-fix parity across implementations. The v2.1.0 release includes bug fixes for inverse geodesic calculations on prolate ellipsoids ported from Java/Python v2.1.
+**Note on v2.1.1 version jump:** Starting with this release, geographiclib-go versions are aligned with the official [Java](https://github.com/geographiclib/geographiclib-java) and [Python](https://github.com/geographiclib/geographiclib-python) implementations maintained by Charles Karney. This makes it easier to determine feature and bug-fix parity across implementations. The v2.1.1 release includes bug fixes for inverse geodesic calculations on prolate ellipsoids ported from Java/Python v2.1.
 
 
 # Geodesics on an ellipsoid
