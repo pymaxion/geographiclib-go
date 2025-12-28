@@ -7,24 +7,24 @@ import (
 )
 
 /*
- PolygonArea is a type representing geodesic polygon area and perimeter
- calculations on an ellipsoid. The area of a geodesic polygon is calculated using
- the method given in Section 6 of:
+PolygonArea is a type representing geodesic polygon area and perimeter
+calculations on an ellipsoid. The area of a geodesic polygon is calculated using
+the method given in Section 6 of:
 
-  C. F. F. Karney, Algorithms for geodesics, J. Geodesy 87, 43-55 (2013)
-  Link: https://doi.org/10.1007/s00190-012-0578-z
-  Addenda: https://geographiclib.sourceforge.io/geod-addenda.html
+	C. F. F. Karney, Algorithms for geodesics, J. Geodesy 87, 43-55 (2013)
+	Link: https://doi.org/10.1007/s00190-012-0578-z
+	Addenda: https://geographiclib.sourceforge.io/geod-addenda.html
 
- Arbitrarily complex polygons are allowed. In the case of self-intersecting
- polygons, the area is accumulated "algebraically", e.g., the areas of the 2
- loops in a figure-8 polygon will partially cancel.
+Arbitrarily complex polygons are allowed. In the case of self-intersecting
+polygons, the area is accumulated "algebraically", e.g., the areas of the 2
+loops in a figure-8 polygon will partially cancel.
 
- This type lets you add vertices one at a time to the polygon. The area and
- perimeter are accumulated at two times the standard floating point precision to
- guard against the loss of accuracy with many-sided polygons. At any point you
- can ask for the perimeter and area so far. There's also an option to treat the
- points as defining a polyline instead of a polygon; in that case, only the
- perimeter is computed.
+This type lets you add vertices one at a time to the polygon. The area and
+perimeter are accumulated at two times the standard floating point precision to
+guard against the loss of accuracy with many-sided polygons. At any point you
+can ask for the perimeter and area so far. There's also an option to treat the
+points as defining a polyline instead of a polygon; in that case, only the
+perimeter is computed.
 */
 type PolygonArea struct {
 	g            *Geodesic
@@ -99,14 +99,14 @@ func (p *PolygonArea) AddPoint(lat, lon float64) {
 }
 
 /*
- AddEdge adds an edge to the polygon or polyline represented by the PolygonArea
- instance.
+AddEdge adds an edge to the polygon or polyline represented by the PolygonArea
+instance.
 
-  azi: azimuth at current point (degrees).
-  s: distance from current point to next point (meters).
+	azi - azimuth at current point (degrees).
+	s - distance from current point to next point (meters).
 
- This function does nothing if no points have been added yet. Use CurrentPoint to
- determine the position of the newest vertex.
+This function does nothing if no points have been added yet. Use CurrentPoint to
+determine the position of the newest vertex.
 */
 func (p *PolygonArea) AddEdge(azi, s float64) {
 	if p.num > 0 { // Do nothing if p.num is zero
@@ -141,15 +141,15 @@ type PolygonResult struct {
 }
 
 /*
- Compute returns the results of the polygon area/perimeter calculation so far.
+Compute returns the results of the polygon area/perimeter calculation so far.
 
-  reverse: if true, then clockwise (instead of counter-clockwise) traversal counts
-    as a positive area.
-  sign: if true, then return a signed result for the area if the polygon is
-    traversed in the "wrong" direction instead of returning the area for the rest of
-    the earth.
+	reverse - if true, then clockwise (instead of counter-clockwise) traversal counts
+	  as a positive area.
+	sign - if true, then return a signed result for the area if the polygon is
+	  traversed in the "wrong" direction instead of returning the area for the rest of
+	  the earth.
 
- More points can be added to the polygon after this call.
+More points can be added to the polygon after this call.
 */
 func (p *PolygonArea) Compute(reverse, sign bool) PolygonResult {
 	if p.num < 2 {
@@ -168,19 +168,19 @@ func (p *PolygonArea) Compute(reverse, sign bool) PolygonResult {
 }
 
 /*
- TestPoint returns the polygon perimeter/area results assuming a tentative final
- test point is added; however, the data for the test point is not saved. This
- lets you report a running result for the perimeter and area as the user moves
- the mouse cursor. Ordinary floating point arithmetic is used to accumulate the
- data for the test point; thus the area and perimeter returned are less accurate
- than if AddPoint and Compute are used.
+TestPoint returns the polygon perimeter/area results assuming a tentative final
+test point is added; however, the data for the test point is not saved. This
+lets you report a running result for the perimeter and area as the user moves
+the mouse cursor. Ordinary floating point arithmetic is used to accumulate the
+data for the test point; thus the area and perimeter returned are less accurate
+than if AddPoint and Compute are used.
 
-  lat: the latitude of the test point (degrees). Should be in the range [-90°, 90°].
-  lon: the longitude of the test point (degrees).
-  reverse: if true then clockwise (instead of counter-clockwise) traversal counts as
-    a positive area.
-  sign: if true then return a signed result for the area if the polygon is traversed
-    in the "wrong" direction instead of returning the area for the rest of the earth.
+	lat - the latitude of the test point (degrees). Should be in the range [-90°, 90°].
+	lon - the longitude of the test point (degrees).
+	reverse - if true then clockwise (instead of counter-clockwise) traversal counts as
+	  a positive area.
+	sign - if true then return a signed result for the area if the polygon is traversed
+	  in the "wrong" direction instead of returning the area for the rest of the earth.
 */
 func (p *PolygonArea) TestPoint(lat, lon float64, reverse, sign bool) PolygonResult {
 	if p.num == 0 {
@@ -218,19 +218,19 @@ func (p *PolygonArea) TestPoint(lat, lon float64, reverse, sign bool) PolygonRes
 }
 
 /*
- TestEdge returns the polygon perimeter/area results assuming a tentative final
- test point is added via an azimuth and distance; however, the data for the test
- point is not saved. This lets you report a running result for the perimeter and
- area as the user moves the mouse cursor. Ordinary floating point arithmetic is
- used to accumulate the data for the test point; thus the area and perimeter
- returned are less accurate than if AddPoint and Compute are used.
+TestEdge returns the polygon perimeter/area results assuming a tentative final
+test point is added via an azimuth and distance; however, the data for the test
+point is not saved. This lets you report a running result for the perimeter and
+area as the user moves the mouse cursor. Ordinary floating point arithmetic is
+used to accumulate the data for the test point; thus the area and perimeter
+returned are less accurate than if AddPoint and Compute are used.
 
-  azi: azimuth at current point (degrees).
-  s: distance from current point to final test point (meters).
-  reverse: if true then clockwise (instead of counter-clockwise) traversal counts as
-    a positive area.
-  sign: if true then return a signed result for the area if the polygon is traversed
-    in the "wrong" direction instead of returning the area for the rest of the earth.
+	azi - azimuth at current point (degrees).
+	s - distance from current point to final test point (meters).
+	reverse - if true then clockwise (instead of counter-clockwise) traversal counts as
+	  a positive area.
+	sign - if true then return a signed result for the area if the polygon is traversed
+	  in the "wrong" direction instead of returning the area for the rest of the earth.
 */
 func (p *PolygonArea) TestEdge(azi, s float64, reverse, sign bool) PolygonResult {
 	if p.num == 0 { // we don't have a starting point!
