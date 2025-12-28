@@ -16,3 +16,6 @@
 
 # Custom ignores
 data
+.claude
+CLAUDE.md
+official

@@ -31,7 +31,7 @@ More information about the GeographicLib project can be found at https://geograp
 1. [References](#references)
 
 # Getting started
-`$ go get github.com/pymaxion/geographiclib-go`
+`$ go get github.com/pymaxion/geographiclib-go/v2`
 
 See the `examples` directory for some basic code samples.
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pymaxion/geographiclib-go/geodesic/capabilities"
+	"github.com/pymaxion/geographiclib-go/v2/geodesic/capabilities"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pymaxion/geographiclib-go/geodesic"
+	"github.com/pymaxion/geographiclib-go/v2/geodesic"
 	"github.com/stretchr/testify/assert"
 )
 
