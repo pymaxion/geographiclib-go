@@ -65,15 +65,17 @@ type Line struct {
 	b41   float64
 	a13   float64
 	s13   float64
-	c1a   []float64
-	c1pa  []float64
-	c2a   []float64
-	c3a   []float64
-	c4a   []float64
+	c1a   [nC1 + 1]float64
+	c1pa  [nC1p + 1]float64
+	c2a   [nC2 + 1]float64
+	c3a   [nC3]float64
+	c4a   [nC4]float64
 	mask  capabilities.Mask
 }
 
-func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilities.Mask) *Line {
+// initLine initializes a Line struct in place. This allows callers to
+// stack-allocate the Line and avoid heap allocation.
+func initLine(l *Line, g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilities.Mask) {
 	// Always allow latitude and azimuth and unrolling the longitude
 	caps |= capabilities.Latitude | capabilities.Azimuth | capabilities.LongUnroll
 	lat1 = latFix(lat1)
@@ -93,7 +95,7 @@ func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilit
 	salp0 := salp1 * cbet1 // alp0 in [0, pi/2 - |bet1|]
 	// Alt: calp0 = Math.hypot(sbet1, calp1 * cbet1). The following is slightly
 	// better (consider the case salp1 = 0).
-	calp0 := math.Hypot(calp1, salp1*sbet1)
+	calp0 := hypot(calp1, salp1*sbet1)
 	// Evaluate sig with tan(bet1) = tan(sig1) * cos(alp1). sig = 0 is nearest
 	// northward crossing of equator. With bet1 = 0, alp1 = pi/2, we have sig1 = 0
 	// (equatorial line). With bet1 = pi/2, alp1 = -pi, sig1 = pi/2 With bet1 =
@@ -114,84 +116,77 @@ func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilit
 	k2 := sq(calp0) * g.ep2
 	eps := k2 / (2*(1+math.Sqrt(1+k2)) + k2)
 
-	var stau1, ctau1, a1m1, a2m1, a3c, b11, b21, b31, a4, b41 = math.NaN(), math.NaN(), math.NaN(),
-		math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()
-	var c1a, c1pa, c2a, c3a, c4a []float64
+	// Initialize Line struct fields
+	l.g = g
+	l.lat1 = lat1
+	l.lon1 = lon1
+	l.azi1 = azi1
+	l.salp1 = salp1
+	l.calp1 = calp1
+	l.dn1 = dn1
+	l.salp0 = salp0
+	l.calp0 = calp0
+	l.ssig1 = ssig1
+	l.csig1 = csig1
+	l.somg1 = somg1
+	l.comg1 = comg1
+	l.k2 = k2
+	l.stau1 = math.NaN()
+	l.ctau1 = math.NaN()
+	l.a1m1 = math.NaN()
+	l.a2m1 = math.NaN()
+	l.a3c = math.NaN()
+	l.b11 = math.NaN()
+	l.b21 = math.NaN()
+	l.b31 = math.NaN()
+	l.a4 = math.NaN()
+	l.b41 = math.NaN()
+	l.a13 = math.NaN()
+	l.s13 = math.NaN()
+	l.mask = caps
 
 	if (caps & capabilities.C1) != 0 {
-		a1m1 = a1m1f(eps)
-		c1a = make([]float64, nC1+1)
-		c1f(eps, c1a)
-		b11 = sinCosSeries(true, ssig1, csig1, c1a)
-		s, c := math.Sincos(b11)
+		l.a1m1 = a1m1f(eps)
+		c1f(eps, l.c1a[:])
+		l.b11 = sinCosSeries(true, ssig1, csig1, l.c1a[:])
+		s, c := math.Sincos(l.b11)
 		// tau1 = sig1 + B11
-		stau1 = ssig1*c + csig1*s
-		ctau1 = csig1*c - ssig1*s
+		l.stau1 = ssig1*c + csig1*s
+		l.ctau1 = csig1*c - ssig1*s
 		// Not necessary because C1pa reverts C1a
 		// b11 = -sinCosSeries(true, stau1, ctau1, c1pa, nC1p)
 	}
 
 	if (caps & capabilities.C1p) != 0 {
-		c1pa = make([]float64, nC1p+1)
-		c1pf(eps, c1pa)
+		c1pf(eps, l.c1pa[:])
 	}
 
 	if (caps & capabilities.C2) != 0 {
-		c2a = make([]float64, nC2+1)
-		a2m1 = a2m1f(eps)
-		c2f(eps, c2a)
-		b21 = sinCosSeries(true, ssig1, csig1, c2a)
+		l.a2m1 = a2m1f(eps)
+		c2f(eps, l.c2a[:])
+		l.b21 = sinCosSeries(true, ssig1, csig1, l.c2a[:])
 	}
 
 	if (caps & capabilities.C3) != 0 {
-		c3a = make([]float64, nC3)
-		g.c3f(eps, c3a)
-		a3c = -g.f * salp0 * g.a3f(eps)
-		b31 = sinCosSeries(true, ssig1, csig1, c3a)
+		g.c3f(eps, l.c3a[:])
+		l.a3c = -g.f * salp0 * g.a3f(eps)
+		l.b31 = sinCosSeries(true, ssig1, csig1, l.c3a[:])
 	}
 
 	if (caps & capabilities.C4) != 0 {
-		c4a = make([]float64, nC4)
-		g.c4f(eps, c4a)
+		g.c4f(eps, l.c4a[:])
 		// Multiplier = a^2 * e^2 * cos(alpha0) * sin(alpha0)
-		a4 = sq(g.a) * calp0 * salp0 * g.e2
-		b41 = sinCosSeries(false, ssig1, csig1, c4a)
+		l.a4 = sq(g.a) * calp0 * salp0 * g.e2
+		l.b41 = sinCosSeries(false, ssig1, csig1, l.c4a[:])
 	}
+}
 
-	return &Line{
-		g:     g,
-		lat1:  lat1,
-		lon1:  lon1,
-		azi1:  azi1,
-		salp1: salp1,
-		calp1: calp1,
-		dn1:   dn1,
-		salp0: salp0,
-		calp0: calp0,
-		ssig1: ssig1,
-		csig1: csig1,
-		somg1: somg1,
-		comg1: comg1,
-		k2:    k2,
-		stau1: stau1,
-		ctau1: ctau1,
-		a1m1:  a1m1,
-		a2m1:  a2m1,
-		a3c:   a3c,
-		b11:   b11,
-		b21:   b21,
-		b31:   b31,
-		a4:    a4,
-		b41:   b41,
-		a13:   math.NaN(),
-		s13:   math.NaN(),
-		c1a:   c1a,
-		c1pa:  c1pa,
-		c2a:   c2a,
-		c3a:   c3a,
-		c4a:   c4a,
-		mask:  caps,
-	}
+// newLine creates a new Line on the heap. For internal hot paths,
+// prefer using initLine with a stack-allocated Line.
+func newLine(g *Geodesic, lat1, lon1, azi1, salp1, calp1 float64, caps capabilities.Mask) *Line {
+	l := &Line{}
+	initLine(l, g, lat1, lon1, azi1, salp1, calp1, caps)
+	return l
 }
 
 /*
@@ -318,7 +313,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 		tau12 := s12_a12 / (l.g.b * (1 + l.a1m1))
 		s, c := math.Sincos(tau12)
 		// tau2 = tau1 + tau12
-		b12 = -sinCosSeries(true, l.stau1*c+l.ctau1*s, l.ctau1*c-l.stau1*s, l.c1pa)
+		b12 = -sinCosSeries(true, l.stau1*c+l.ctau1*s, l.ctau1*c-l.stau1*s, l.c1pa[:])
 		sig12 = tau12 - (b12 - l.b11)
 		ssig12, csig12 = math.Sincos(sig12)
 		if math.Abs(l.g.f) > 0.01 {
@@ -345,7 +340,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 			//      1/5   157e6 3.8e9 280e6
 			ssig2 := l.ssig1*csig12 + l.csig1*ssig12
 			csig2 := l.csig1*csig12 - l.ssig1*ssig12
-			b12 = sinCosSeries(true, ssig2, csig2, l.c1a)
+			b12 = sinCosSeries(true, ssig2, csig2, l.c1a[:])
 			serr := (1+l.a1m1)*(sig12+(b12-l.b11)) - s12_a12/l.g.b
 			sig12 = sig12 - serr/math.Sqrt(1+l.k2*sq(ssig2))
 			ssig12, csig12 = math.Sincos(sig12)
@@ -361,14 +356,14 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 	dn2 := math.Sqrt(1 + l.k2*sq(ssig2))
 	if (caps & (capabilities.Distance | capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
 		if arcMode || math.Abs(l.g.f) > 0.01 {
-			b12 = sinCosSeries(true, ssig2, csig2, l.c1a)
+			b12 = sinCosSeries(true, ssig2, csig2, l.c1a[:])
 		}
 		ab1 = (1 + l.a1m1) * (b12 - l.b11)
 	}
 	// sin(bet2) = cos(alp0) * sin(sig2)
 	sbet2 = l.calp0 * ssig2
 	// Alt: cbet2 = Math.hypot(csig2, salp0 * ssig2);
-	cbet2 = math.Hypot(l.salp0, l.calp0*csig2)
+	cbet2 = hypot(l.salp0, l.calp0*csig2)
 	if cbet2 == 0 {
 		// I.e., salp0 = 0, csig2 = 0.  Break the degeneracy in this case
 		cbet2, csig2 = tiny, tiny
@@ -391,7 +386,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 		} else {
 			omg12 = math.Atan2(somg2*l.comg1-comg2*l.somg1, comg2*l.comg1+somg2*l.somg1)
 		}
-		lam12 := omg12 + l.a3c*(sig12+(sinCosSeries(true, ssig2, csig2, l.c3a)-l.b31))
+		lam12 := omg12 + l.a3c*(sig12+(sinCosSeries(true, ssig2, csig2, l.c3a[:])-l.b31))
 		lon12 := rad2deg(lam12)
 		if (caps & capabilities.LongUnroll) != 0 {
 			r.lon2 = l.lon1 + lon12
@@ -409,7 +404,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 	}
 
 	if (caps & (capabilities.ReducedLength | capabilities.GeodesicScale)) != 0 {
-		b22 := sinCosSeries(true, ssig2, csig2, l.c2a)
+		b22 := sinCosSeries(true, ssig2, csig2, l.c2a[:])
 		ab2 := (1 + l.a2m1) * (b22 - l.b21)
 		j12 := (l.a1m1-l.a2m1)*sig12 + (ab1 - ab2)
 		if (caps & capabilities.ReducedLength) != 0 {
@@ -425,7 +420,7 @@ func (l *Line) genPosition(arcMode bool, s12_a12 float64, caps capabilities.Mask
 	}
 
 	if (caps & capabilities.Area) != 0 {
-		b42 := sinCosSeries(false, ssig2, csig2, l.c4a)
+		b42 := sinCosSeries(false, ssig2, csig2, l.c4a[:])
 		var salp12, calp12 float64
 		if l.calp0 == 0 || l.salp0 == 0 {
 			// alp12 = alp2 - alp1, used in atan2 so no need to normalize

@@ -115,9 +115,9 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	dn2 := math.Sqrt(1 + s.ep2*sq(sbet2))
 
 	s12x, m12x, sig12 := math.NaN(), math.NaN(), math.NaN()
-	c1a := make([]float64, nC1+1)
-	c2a := make([]float64, nC2+1)
-	c3a := make([]float64, nC3)
+	var c1a [nC1 + 1]float64
+	var c2a [nC2 + 1]float64
+	var c3a [nC3]float64
 
 	meridian := lat1 == -90 || slam12 == 0
 	if meridian {
@@ -131,7 +131,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		sig12 = math.Atan2(math.Max(0.0, csig1*ssig2-ssig1*csig2), csig1*csig2+ssig1*ssig2)
 
 		lCaps := caps | capabilities.Distance | capabilities.ReducedLength
-		lr := s.lengths(s.n, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2, lCaps, c1a, c2a)
+		lr := s.lengths(s.n, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2, lCaps, c1a[:], c2a[:])
 		s12x, m12x, r.M12, r.M21 = lr.s12b, lr.m12b, lr.M12, lr.M21
 		// Add the check for sig12 since zero length geodesics might yield m12 < 0. Test
 		// case was:
@@ -177,7 +177,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 		// meridian and geodesic is neither meridional or equatorial.
 
 		// Figure a starting point for Newton's method
-		sr := s.inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12, slam12, clam12, c1a, c2a)
+		sr := s.inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12, slam12, clam12, c1a[:], c2a[:])
 		sig12, r.salp1, r.calp1, r.salp2, r.calp2 = sr.sig12, sr.salp1, sr.calp1, sr.salp2, sr.calp2
 
 		if sig12 >= 0 {
@@ -210,7 +210,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			for tripn, tripb := false, false; ; numit++ {
 				// the WGS84 logic set: mean = 1.47, sr = 1.25, max = 16
 				// WGS84 and random input: mean = 2.85, sr = 0.60
-				l12r := s.lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, r.salp1, r.calp1, slam12, clam12, numit < maxit1, c1a, c2a, c3a)
+				l12r := s.lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, r.salp1, r.calp1, slam12, clam12, numit < maxit1, c1a[:], c2a[:], c3a[:])
 				v, dv := l12r.lam12, l12r.dlam12
 				sig12, ssig1, csig1, ssig2, csig2, eps, domg12 = l12r.sig12, l12r.ssig1, l12r.csig1, l12r.ssig2, l12r.csig2, l12r.eps, l12r.domg12
 				r.salp2, r.calp2 = l12r.salp2, l12r.calp2
@@ -267,7 +267,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			} else {
 				lMask = capabilities.OutMask | capabilities.None
 			}
-			lr := s.lengths(eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2, lMask, c1a, c2a)
+			lr := s.lengths(eps, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2, cbet1, cbet2, lMask, c1a[:], c2a[:])
 			s12x, m12x, r.M12, r.M21 = lr.s12b, lr.m12b, lr.M12, lr.M21
 			m12x *= s.b
 			s12x *= s.b
@@ -290,7 +290,7 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 	if (caps & capabilities.Area) != 0 {
 		// From lambda12: sin(alp1) * cos(bet1) = sin(alp0)
 		salp0 := r.salp1 * cbet1
-		calp0 := math.Hypot(r.calp1, r.salp1*sbet1) // calp0 > 0
+		calp0 := hypot(r.calp1, r.salp1*sbet1) // calp0 > 0
 		var alp12 float64
 		if calp0 != 0 && salp0 != 0 {
 			// From lambda12: tan(bet) = tan(sig) * cos(alp)
@@ -302,10 +302,10 @@ func (s *inverseSolver) genInverse(lat1, lon1, lat2, lon2 float64, caps capabili
 			A4 := sq(s.a) * calp0 * salp0 * s.e2
 			ssig1, csig1 = norm(ssig1, csig1)
 			ssig2, csig2 = norm(ssig2, csig2)
-			c4a := make([]float64, nC4)
-			s.c4f(eps, c4a)
+			var c4a [nC4]float64
+			s.c4f(eps, c4a[:])
 
-			B41, B42 := sinCosSeries(false, ssig1, csig1, c4a), sinCosSeries(false, ssig2, csig2, c4a)
+			B41, B42 := sinCosSeries(false, ssig1, csig1, c4a[:]), sinCosSeries(false, ssig2, csig2, c4a[:])
 			r.S12Area = A4 * (B42 - B41)
 		} else {
 			// Avoid problems with indeterminate sig1, sig2 on equator
@@ -471,7 +471,7 @@ func (s *inverseSolver) inverseStart(sbet1, cbet1, dn1, sbet2, cbet2, dn2, lam12
 	} else {
 		r.calp1 = sbet12a - cbet2*sbet1*sq(somg12)/(1-comg12)
 	}
-	ssig12 := math.Hypot(r.salp1, r.calp1)
+	ssig12 := hypot(r.salp1, r.calp1)
 	csig12 := sbet1*sbet2 + cbet1*cbet2*comg12
 
 	if shortline && ssig12 < s.etol2 {
@@ -672,7 +672,7 @@ func (s *inverseSolver) lambda12(sbet1, cbet1, dn1, sbet2, cbet2, dn2, salp1, ca
 
 	// sin(alp1) * cos(bet1) = sin(alp0)
 	salp0 := salp1 * cbet1
-	calp0 := math.Hypot(calp1, salp1*sbet1) // calp0 > 0
+	calp0 := hypot(calp1, salp1*sbet1) // calp0 > 0
 	// tan(bet1) = tan(sig1) * cos(alp1)
 	// tan(omg1) = sin(alp0) * tan(sig1) = tan(omg1)=tan(alp1)*sin(bet1)
 	r.ssig1 = sbet1

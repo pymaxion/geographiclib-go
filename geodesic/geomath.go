@@ -24,6 +24,46 @@ const (
 	maxit2        = maxit1 + digits + 10
 )
 
+// Package-level coefficient arrays for hot-path functions.
+// These are constants used in polynomial evaluation.
+var (
+	// Coefficients for a1m1f: (1-eps)*A1-1, polynomial in eps2 of order 3
+	coeffA1 = [5]float64{1, 4, 64, 0, 256}
+
+	// Coefficients for a2m1f: (eps+1)*A2-1, polynomial in eps2 of order 3
+	coeffA2 = [5]float64{-11, -28, -192, 0, 256}
+
+	// Coefficients for c1f
+	coeffC1 = [20]float64{
+		-1, 6, -16, 32,       // C1[1]/eps^1, polynomial in eps2 of order 2
+		-9, 64, -128, 2048,   // C1[2]/eps^2, polynomial in eps2 of order 2
+		9, -16, 768,          // C1[3]/eps^3, polynomial in eps2 of order 1
+		3, -5, 512,           // C1[4]/eps^4, polynomial in eps2 of order 1
+		-7, 1280,             // C1[5]/eps^5, polynomial in eps2 of order 0
+		-7, 2048,             // C1[6]/eps^6, polynomial in eps2 of order 0
+	}
+
+	// Coefficients for c1pf
+	coeffC1p = [20]float64{
+		205, -432, 768, 1536,    // C1p[1]/eps^1, polynomial in eps2 of order 2
+		4005, -4736, 3840, 12288, // C1p[2]/eps^2, polynomial in eps2 of order 2
+		-225, 116, 384,          // C1p[3]/eps^3, polynomial in eps2 of order 1
+		-7173, 2695, 7680,       // C1p[4]/eps^4, polynomial in eps2 of order 1
+		3467, 7680,              // C1p[5]/eps^5, polynomial in eps2 of order 0
+		38081, 61440,            // C1p[6]/eps^6, polynomial in eps2 of order 0
+	}
+
+	// Coefficients for c2f
+	coeffC2 = [20]float64{
+		1, 2, 16, 32,        // C2[1]/eps^1, polynomial in eps2 of order 2
+		35, 64, 384, 2048,   // C2[2]/eps^2, polynomial in eps2 of order 2
+		15, 80, 768,         // C2[3]/eps^3, polynomial in eps2 of order 1
+		7, 35, 512,          // C2[4]/eps^4, polynomial in eps2 of order 1
+		63, 1280,            // C2[5]/eps^5, polynomial in eps2 of order 0
+		77, 2048,            // C2[6]/eps^6, polynomial in eps2 of order 0
+	}
+)
+
 var (
 	epsilon = math.Nextafter(1., 2.) - 1. // https://stackoverflow.com/a/22185792/4755732
 	// tiny is an underflow guard. We require tiny * epsilon > 0 and tiny + epsilon
@@ -42,6 +82,14 @@ var (
 func sq(x float64) float64 {
 	return x * x
 }
+
+// hypot computes sqrt(x*x + y*y) without the overflow/underflow protection
+// of math.Hypot. Use only when x and y are known to be in a safe range
+// (e.g., products of trigonometric values).
+func hypot(x, y float64) float64 {
+	return math.Sqrt(x*x + y*y)
+}
+
 
 // atanh calculates the inverse hyperbolic tangent of x. This is defined in terms
 // of log1p(x) in order to maintain accuracy near x = 0. In addition, the odd
@@ -122,6 +170,10 @@ func angRound(x float64) float64 {
 
 // angNormalize normalizes an angle in degrees to the range [-180, 180)
 func angNormalize(x float64) float64 {
+	// Fast path: if x is already in [-180, 180], no need for expensive Remainder
+	if x >= -180 && x <= 180 {
+		return x
+	}
 	y := math.Remainder(x, 360)
 	if math.Abs(y) == 180 {
 		return math.Copysign(180, x)
@@ -171,7 +223,13 @@ func rad2deg(r float64) float64 {
 func sincosd(x float64) (float64, float64) {
 	// In order to minimize round-off errors, this function exactly reduces the
 	// argument to the range [-45, 45] before converting it to radians.
-	r := math.Mod(x, 360)
+	// Fast path: if x is already in [-360, 360], avoid expensive math.Mod
+	var r float64
+	if x >= -360 && x <= 360 {
+		r = x
+	} else {
+		r = math.Mod(x, 360)
+	}
 	var q int
 	if math.IsNaN(r) {
 		q = 0
@@ -186,13 +244,10 @@ func sincosd(x float64) (float64, float64) {
 	switch q & 3 {
 	case 0:
 		sinx, cosx = s, c
-		break
 	case 1:
 		sinx, cosx = c, -s
-		break
 	case 2:
 		sinx, cosx = -s, -c
-		break
 	default: // case 3
 		sinx, cosx = -c, s
 	}
@@ -228,13 +283,10 @@ func sincosde(x, t float64) (float64, float64) {
 	switch q & 3 {
 	case 0:
 		sinx, cosx = s, c
-		break
 	case 1:
 		sinx, cosx = c, -s
-		break
 	case 2:
 		sinx, cosx = -s, -c
-		break
 	default: // case 3
 		sinx, cosx = -c, s
 	}
@@ -474,37 +526,19 @@ func initC4x(n float64) []float64 {
 
 // a1m1f calculates the scale factor A1-1 = mean value of (d/dsigma)I1 - 1
 func a1m1f(eps float64) float64 {
-	coeff := []float64{
-		// (1-eps)*A1-1, polynomial in eps2 of order 3
-		1, 4, 64, 0, 256,
-	}
 	m := nA1 / 2
-	t := polyval(m, coeff, 0, sq(eps)) / coeff[m+1]
+	t := polyval(m, coeffA1[:], 0, sq(eps)) / coeffA1[m+1]
 	return (t + eps) / (1 - eps)
 }
 
 // c1f computes the coefficients C1[l] in the Fourier expansion of B1
 func c1f(eps float64, c []float64) {
-	coeff := []float64{
-		// C1[1]/eps^1, polynomial in eps2 of order 2
-		-1, 6, -16, 32,
-		// C1[2]/eps^2, polynomial in eps2 of order 2
-		-9, 64, -128, 2048,
-		// C1[3]/eps^3, polynomial in eps2 of order 1
-		9, -16, 768,
-		// C1[4]/eps^4, polynomial in eps2 of order 1
-		3, -5, 512,
-		// C1[5]/eps^5, polynomial in eps2 of order 0
-		-7, 1280,
-		// C1[6]/eps^6, polynomial in eps2 of order 0
-		-7, 2048,
-	}
 	eps2 := sq(eps)
 	d := eps
 	o := 0
-	for l := 1; l <= nC1; l++ { // l is index of C1p[l]
-		m := (nC1 - l) / 2 // order of polynomial in eps^2
-		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+	for l := 1; l <= nC1; l++ {
+		m := (nC1 - l) / 2
+		c[l] = d * polyval(m, coeffC1[:], o, eps2) / coeffC1[o+m+1]
 		o += m + 2
 		d *= eps
 	}
@@ -512,26 +546,12 @@ func c1f(eps float64, c []float64) {
 
 // c1pf computes the coefficients C1p[l] in the Fourier expansion of B1p
 func c1pf(eps float64, c []float64) {
-	coeff := []float64{
-		// C1p[1]/eps^1, polynomial in eps2 of order 2
-		205, -432, 768, 1536,
-		// C1p[2]/eps^2, polynomial in eps2 of order 2
-		4005, -4736, 3840, 12288,
-		// C1p[3]/eps^3, polynomial in eps2 of order 1
-		-225, 116, 384,
-		// C1p[4]/eps^4, polynomial in eps2 of order 1
-		-7173, 2695, 7680,
-		// C1p[5]/eps^5, polynomial in eps2 of order 0
-		3467, 7680,
-		// C1p[6]/eps^6, polynomial in eps2 of order 0
-		38081, 61440,
-	}
 	eps2 := sq(eps)
 	d := eps
 	o := 0
-	for l := 1; l <= nC1p; l++ { // l is index of C1p[l]
-		m := (nC1p - l) / 2 // order of polynomial in eps^2
-		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+	for l := 1; l <= nC1p; l++ {
+		m := (nC1p - l) / 2
+		c[l] = d * polyval(m, coeffC1p[:], o, eps2) / coeffC1p[o+m+1]
 		o += m + 2
 		d *= eps
 	}
@@ -539,38 +559,19 @@ func c1pf(eps float64, c []float64) {
 
 // a2m1f calculates the scale factor A2-1 = mean value of (d/dsigma)I2 - 1
 func a2m1f(eps float64) float64 {
-	coeff := []float64{
-		// (eps+1)*A2-1, polynomial in eps2 of order 3
-		-11, -28, -192, 0, 256,
-	}
 	m := nA2 / 2
-	t := polyval(m, coeff, 0, sq(eps)) / coeff[m+1]
+	t := polyval(m, coeffA2[:], 0, sq(eps)) / coeffA2[m+1]
 	return (t - eps) / (1 + eps)
 }
 
 // c2f calculates the coefficients C2[l] in the Fourier expansion of B2
 func c2f(eps float64, c []float64) {
-	coeff := []float64{
-		// C2[1]/eps^1, polynomial in eps2 of order 2
-		1, 2, 16, 32,
-		// C2[2]/eps^2, polynomial in eps2 of order 2
-		35, 64, 384, 2048,
-		// C2[3]/eps^3, polynomial in eps2 of order 1
-		15, 80, 768,
-		// C2[4]/eps^4, polynomial in eps2 of order 1
-		7, 35, 512,
-		// C2[5]/eps^5, polynomial in eps2 of order 0
-		63, 1280,
-		// C2[6]/eps^6, polynomial in eps2 of order 0
-		77, 2048,
-	}
-
 	eps2 := sq(eps)
 	d := eps
 	o := 0
-	for l := 1; l <= nC2; l++ { // l is index of C2[l]
-		m := (nC2 - l) / 2 // order of polynomial in eps^2
-		c[l] = d * polyval(m, coeff, o, eps2) / coeff[o+m+1]
+	for l := 1; l <= nC2; l++ {
+		m := (nC2 - l) / 2
+		c[l] = d * polyval(m, coeffC2[:], o, eps2) / coeffC2[o+m+1]
 		o += m + 2
 		d *= eps
 	}
