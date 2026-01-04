@@ -1,7 +1,7 @@
 # geographiclib-go
 ### A Go port of [GeographicLib](https://geographiclib.sourceforge.io/)
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go/v2.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go/v2)  [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go/v2)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go/v2)
+[![GitHub Release](https://img.shields.io/github/v/release/pymaxion/geographiclib-go)](https://github.com/pymaxion/geographiclib-go/releases) [![Go Reference](https://pkg.go.dev/badge/github.com/pymaxion/geographiclib-go/v2.svg)](https://pkg.go.dev/github.com/pymaxion/geographiclib-go/v2) [![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/pymaxion/geographiclib-go.svg)](https://github.com/pymaxion/geographiclib-go) [![Go Report Card](https://goreportcard.com/badge/github.com/pymaxion/geographiclib-go/v2)](https://goreportcard.com/report/github.com/pymaxion/geographiclib-go/v2)
 
 ![Build](https://github.com/pymaxion/geographiclib-go/actions/workflows/build.yml/badge.svg) ![Tests](https://github.com/pymaxion/geographiclib-go/actions/workflows/tests.yml/badge.svg)
 
