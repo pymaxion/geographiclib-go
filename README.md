@@ -40,6 +40,7 @@ See [Releases](https://github.com/pymaxion/geographiclib-go/releases) for full d
 
 | Version                                                                    | Description                                                    |
 |----------------------------------------------------------------------------|----------------------------------------------------------------|
+| [v2.1.2](https://github.com/pymaxion/geographiclib-go/releases/tag/v2.1.2) | Performance optimizations for Direct and Inverse calculations  |
 | [v2.1.1](https://github.com/pymaxion/geographiclib-go/releases/tag/v2.1.1) | Sync with GeographicLib Java/Python v2.1 (see note below)      |
 | [v1.1.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.1.0) | Add gnomonic projection calculations                           |
 | [v1.0.1](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.1) | Fix failing build on ARM architectures                         |
