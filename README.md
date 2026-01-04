@@ -28,6 +28,7 @@ More information about the GeographicLib project can be found at https://geograp
    1. [Basic geodesic calculations](#basic-geodesic-calculations)
    1. [Computing waypoints](#computing-waypoints)
    1. [Measuring areas](#measuring-areas)
+1. [Performance](#performance)
 1. [References](#references)
 
 # Getting started
@@ -47,7 +48,6 @@ See [Releases](https://github.com/pymaxion/geographiclib-go/releases) for full d
 | [v1.0.0](https://github.com/pymaxion/geographiclib-go/releases/tag/v1.0.0) | Initial release                                                |
 
 **Note on v2.1.1 version jump:** Starting with this release, geographiclib-go versions are aligned with the official [Java](https://github.com/geographiclib/geographiclib-java) and [Python](https://github.com/geographiclib/geographiclib-python) implementations maintained by Charles Karney. This makes it easier to determine feature and bug-fix parity across implementations. The v2.1.1 release includes bug fixes for inverse geodesic calculations on prolate ellipsoids ported from Java/Python v2.1.
-
 
 # Geodesics on an ellipsoid
 ## Introduction
@@ -297,6 +297,10 @@ r := p.Compute(false, true)
 fmt.Printf("Perimeter/area of Antarctica are %.3f m / %.1f m^2.\n", r.Perimeter, r.Area)
 // Prints: "Perimeter/area of Antarctica are 16831067.893 m / 13662703680020.1 m^2."
 ```
+
+# Performance
+
+geographiclib-go performs comparably to the officially-maintained Java implementation. For detailed benchmarks comparing GeographicLib implementations across languages, see [geographiclib-benchmarks](https://github.com/pymaxion/geographiclib-benchmarks).
 
 # References
 * F. W. Bessel, [The calculation of longitude and latitude from geodesic measurements (1825)](https://arxiv.org/abs/0908.1824), Astron. Nachr. 331(8), 852–861 (2010), translated by C. F. F. Karney and R. E. Deakin.
